@@ -1,0 +1,8 @@
+node_modules/
+.next/
+conference.db
+conference.db-shm
+conference.db-wal
+.claude/
+.env
+.env.local
