@@ -126,15 +126,15 @@ export default function RoomPage() {
 
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Video area */}
-        <div className="flex-1 p-4 flex items-center justify-center">
-          <div className="w-full max-w-5xl">
+        {/* Video area - takes up 3/4 of the width */}
+        <div className="flex-[3] p-4 flex items-center justify-center min-w-0">
+          <div className="w-full h-full max-h-[calc(100vh-64px)]">
             <VideoPlayer url={room.video_url} />
           </div>
         </div>
 
-        {/* Chat sidebar */}
-        <div className="w-80 border-l border-gray-800 flex-shrink-0">
+        {/* Chat sidebar - takes up 1/4 of the width */}
+        <div className="flex-[1] min-w-[280px] max-w-[350px] border-l border-gray-800 flex-shrink-0">
           <ChatPanel roomCode={code} username={username || "Anonymous"} />
         </div>
       </div>
