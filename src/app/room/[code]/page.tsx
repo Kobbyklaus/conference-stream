@@ -111,30 +111,30 @@ export default function RoomPage() {
   return (
     <main className="h-screen flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 border-b border-gray-800">
-        <div className="flex items-center gap-3">
-          <a href="/" className="text-gray-400 hover:text-white text-sm">
-            &larr; Home
+      <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-800">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <a href="/" className="text-gray-400 hover:text-white text-sm shrink-0">
+            &larr;
           </a>
-          <h1 className="text-lg font-semibold">{room.name}</h1>
-          <span className="text-xs text-gray-500 font-mono bg-gray-800 px-2 py-0.5 rounded">
+          <h1 className="text-sm md:text-lg font-semibold truncate">{room.name}</h1>
+          <span className="text-xs text-gray-500 font-mono bg-gray-800 px-2 py-0.5 rounded shrink-0 hidden sm:inline">
             {room.code}
           </span>
         </div>
         <ViewerCount roomCode={code} />
       </header>
 
-      {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Video area - takes up 3/4 of the width */}
-        <div className="flex-[3] p-4 flex items-center justify-center min-w-0">
-          <div className="w-full h-full max-h-[calc(100vh-64px)]">
+      {/* Content - stacks vertically on mobile, side by side on desktop */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Video area */}
+        <div className="w-full md:flex-[3] p-2 md:p-4 flex items-start md:items-center justify-center min-w-0">
+          <div className="w-full">
             <VideoPlayer url={room.video_url} />
           </div>
         </div>
 
-        {/* Chat sidebar - takes up 1/4 of the width */}
-        <div className="flex-[1] min-w-[280px] max-w-[350px] border-l border-gray-800 flex-shrink-0">
+        {/* Chat - below video on mobile, sidebar on desktop */}
+        <div className="flex-1 md:flex-initial md:w-[320px] lg:w-[350px] border-t md:border-t-0 md:border-l border-gray-800 min-h-0">
           <ChatPanel roomCode={code} username={username || "Anonymous"} />
         </div>
       </div>
