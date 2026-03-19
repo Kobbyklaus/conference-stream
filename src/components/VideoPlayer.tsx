@@ -89,6 +89,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
   const ignoreStateChangeRef = useRef(false);
   const lastSeekTimeRef = useRef(0);
   const [captionsOn, setCaptionsOn] = useState(true);
+  const [needsInteraction, setNeedsInteraction] = useState(false);
 
   const emitHostEvent = useCallback(
     (event: string, currentTime: number) => {
@@ -118,12 +119,13 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
         width: "100%",
         height: "100%",
         playerVars: {
-          autoplay: isHost ? 1 : 0,
+          autoplay: 1,
           controls: isHost ? 1 : 0,
           disablekb: isHost ? 0 : 1,
           modestbranding: 1,
           rel: 0,
           cc_load_policy: 1,
+          playsinline: 1,
         },
         events: {
           onReady: () => {
@@ -140,6 +142,16 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
                 ignoreStateChangeRef.current = false;
               }, 1000);
               pendingSyncRef.current = null;
+            }
+
+            // Check if autoplay was blocked for viewers
+            if (!isHost) {
+              setTimeout(() => {
+                const state = playerRef.current?.getPlayerState();
+                if (state !== window.YT.PlayerState.PLAYING) {
+                  setNeedsInteraction(true);
+                }
+              }, 1500);
             }
 
             if (isHost && hostToken) {
@@ -380,7 +392,20 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
-      {!isHost && (
+      {!isHost && needsInteraction && (
+        <div
+          className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 cursor-pointer"
+          onClick={() => {
+            playerRef.current?.playVideo();
+            setNeedsInteraction(false);
+          }}
+        >
+          <div className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold text-lg transition-colors flex items-center gap-2">
+            <span className="text-2xl">▶</span> Click to Watch
+          </div>
+        </div>
+      )}
+      {!isHost && !needsInteraction && (
         <div className="absolute inset-0 z-10" style={{ pointerEvents: "auto" }} />
       )}
     </div>
