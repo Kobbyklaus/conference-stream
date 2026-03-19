@@ -3,16 +3,27 @@ import { createRoom, getRoomByCode } from "@/lib/db";
 import { nanoid } from "nanoid";
 
 export async function POST(req: NextRequest) {
-  const { name, videoUrl } = await req.json();
+  const { name, videoUrl, startTime, endTime } = await req.json();
 
   if (!name || !videoUrl) {
     return NextResponse.json({ error: "Name and video URL are required" }, { status: 400 });
   }
 
   const code = nanoid(6).toUpperCase();
-  createRoom(code, name, videoUrl);
+  const hostToken = nanoid(16);
 
-  return NextResponse.json({ code, name, videoUrl });
+  // If start time is in the future, set status to 'scheduled', otherwise 'live'
+  let status = "live";
+  if (startTime) {
+    const start = new Date(startTime);
+    if (start > new Date()) {
+      status = "scheduled";
+    }
+  }
+
+  createRoom(code, name, videoUrl, hostToken, status, startTime, endTime);
+
+  return NextResponse.json({ code, name, videoUrl, hostToken, status, startTime, endTime });
 }
 
 export async function GET(req: NextRequest) {
@@ -28,5 +39,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Room not found" }, { status: 404 });
   }
 
-  return NextResponse.json(room);
+  // Don't expose host_token in GET responses
+  const { host_token, ...safeRoom } = room;
+  return NextResponse.json(safeRoom);
 }

@@ -5,7 +5,10 @@ import { useState } from "react";
 export default function CreateRoom() {
   const [name, setName] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const [hostToken, setHostToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState("");
@@ -25,7 +28,12 @@ export default function CreateRoom() {
       const res = await fetch("/api/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, videoUrl }),
+        body: JSON.stringify({
+          name,
+          videoUrl,
+          startTime: startTime ? new Date(startTime).toISOString() : undefined,
+          endTime: endTime ? new Date(endTime).toISOString() : undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -35,6 +43,10 @@ export default function CreateRoom() {
 
       const data = await res.json();
       setRoomCode(data.code);
+      setHostToken(data.hostToken);
+
+      // Store host token in localStorage
+      localStorage.setItem(`host_${data.code}`, data.hostToken);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -83,7 +95,7 @@ export default function CreateRoom() {
           {copied === "code" ? "Copied!" : "Copy Code"}
         </button>
         <a
-          href={`/room/${roomCode}?user=Host`}
+          href={`/room/${roomCode}?user=Host&hostToken=${hostToken}`}
           className="block w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-sm text-center font-medium transition-colors"
         >
           Enter Room as Host
@@ -119,6 +131,35 @@ export default function CreateRoom() {
           required
         />
       </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">
+            Start Time <span className="text-gray-600">(optional)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">
+            End Time <span className="text-gray-600">(optional)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+          />
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-500">
+        Leave times empty to start immediately with no end time.
+      </p>
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
