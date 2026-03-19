@@ -89,7 +89,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
   const ignoreStateChangeRef = useRef(false);
   const lastSeekTimeRef = useRef(0);
   const [captionsOn, setCaptionsOn] = useState(true);
-  const [needsInteraction, setNeedsInteraction] = useState(false);
+  const [isMuted, setIsMuted] = useState(!isHost); // viewers start muted for autoplay
 
   const emitHostEvent = useCallback(
     (event: string, currentTime: number) => {
@@ -120,6 +120,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
         height: "100%",
         playerVars: {
           autoplay: 1,
+          mute: isHost ? 0 : 1,
           controls: isHost ? 1 : 0,
           disablekb: isHost ? 0 : 1,
           modestbranding: 1,
@@ -142,16 +143,6 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
                 ignoreStateChangeRef.current = false;
               }, 1000);
               pendingSyncRef.current = null;
-            }
-
-            // Check if autoplay was blocked for viewers
-            if (!isHost) {
-              setTimeout(() => {
-                const state = playerRef.current?.getPlayerState();
-                if (state !== window.YT.PlayerState.PLAYING) {
-                  setNeedsInteraction(true);
-                }
-              }, 1500);
             }
 
             if (isHost && hostToken) {
@@ -348,7 +339,8 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
           ref={videoRef}
           className="absolute inset-0 w-full h-full"
           controls={isHost}
-          autoPlay={isHost}
+          autoPlay
+          muted={!isHost}
           playsInline
         >
           <source src={videoInfo.url} />
@@ -382,7 +374,22 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
           </button>
         )}
         {!isHost && (
-          <div className="absolute inset-0 z-10" style={{ pointerEvents: "auto" }} />
+          <div className="absolute inset-0 z-10" style={{ pointerEvents: "none" }} />
+        )}
+        {!isHost && isMuted && (
+          <button
+            onClick={() => {
+              const video = videoRef.current;
+              if (video) {
+                video.muted = false;
+                video.volume = 1;
+              }
+              setIsMuted(false);
+            }}
+            className="absolute bottom-3 left-3 z-30 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
+          >
+            🔇 Tap to Unmute
+          </button>
         )}
       </div>
     );
@@ -392,21 +399,20 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
-      {!isHost && needsInteraction && (
-        <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 cursor-pointer"
-          onClick={() => {
-            playerRef.current?.playVideo();
-            setNeedsInteraction(false);
-          }}
-        >
-          <div className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold text-lg transition-colors flex items-center gap-2">
-            <span className="text-2xl">▶</span> Click to Watch
-          </div>
-        </div>
+      {!isHost && (
+        <div className="absolute inset-0 z-10" style={{ pointerEvents: "none" }} />
       )}
-      {!isHost && !needsInteraction && (
-        <div className="absolute inset-0 z-10" style={{ pointerEvents: "auto" }} />
+      {!isHost && isMuted && (
+        <button
+          onClick={() => {
+            playerRef.current?.unMute();
+            playerRef.current?.setVolume(100);
+            setIsMuted(false);
+          }}
+          className="absolute bottom-4 left-4 z-30 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
+        >
+          🔇 Tap to Unmute
+        </button>
       )}
     </div>
   );
