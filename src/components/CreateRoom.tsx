@@ -12,6 +12,7 @@ export default function CreateRoom() {
   const [roomCode, setRoomCode] = useState("");
   const [hostToken, setHostToken] = useState("");
   const [error, setError] = useState("");
+  const [subtitleUrl, setSubtitleUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState("");
 
@@ -33,6 +34,7 @@ export default function CreateRoom() {
         body: JSON.stringify({
           name,
           videoUrl,
+          subtitleUrl: subtitleUrl || undefined,
           startTime: startDate && startTimeVal ? new Date(`${startDate}T${startTimeVal}`).toISOString() : undefined,
           endTime: endDate && endTimeVal ? new Date(`${endDate}T${endTimeVal}`).toISOString() : undefined,
         }),
@@ -128,9 +130,22 @@ export default function CreateRoom() {
           type="url"
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
-          placeholder="YouTube or Vimeo URL"
+          placeholder="YouTube, Vimeo, Google Drive, or .mp4 URL"
           className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-400 mb-1">
+          Subtitle URL <span className="text-gray-600">(optional, .vtt file)</span>
+        </label>
+        <input
+          type="url"
+          value={subtitleUrl}
+          onChange={(e) => setSubtitleUrl(e.target.value)}
+          placeholder="https://example.com/subtitles.vtt"
+          className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 

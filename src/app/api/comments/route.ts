@@ -8,6 +8,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Room code is required" }, { status: 400 });
   }
 
-  const comments = getCommentsByRoom(roomCode.toUpperCase());
+  const comments = await getCommentsByRoom(roomCode.toUpperCase());
   return NextResponse.json(comments);
 }

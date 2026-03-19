@@ -1,58 +1,75 @@
-import Database from "better-sqlite3";
-import path from "path";
+import { Pool } from "pg";
 
-const dbPath = path.join(process.cwd(), "conference.db");
-const db = new Database(dbPath);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : undefined,
+});
 
-db.pragma("journal_mode = WAL");
+export async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS rooms (
+      id SERIAL PRIMARY KEY,
+      code TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      video_url TEXT NOT NULL,
+      host_token TEXT,
+      status TEXT DEFAULT 'live',
+      start_time TEXT,
+      end_time TEXT,
+      subtitle_url TEXT,
+      peak_viewers INTEGER DEFAULT 0,
+      total_joins INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS rooms (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    video_url TEXT NOT NULL,
-    host_token TEXT,
-    status TEXT DEFAULT 'live',
-    start_time TEXT,
-    end_time TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
+    CREATE TABLE IF NOT EXISTS comments (
+      id SERIAL PRIMARY KEY,
+      room_code TEXT NOT NULL,
+      username TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
 
-  CREATE TABLE IF NOT EXISTS comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    room_code TEXT NOT NULL,
-    username TEXT NOT NULL,
-    message TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (room_code) REFERENCES rooms(code)
-  );
-`);
+  // Add columns if they don't exist (for existing databases)
+  const migrations = [
+    "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS subtitle_url TEXT",
+    "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS peak_viewers INTEGER DEFAULT 0",
+    "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS total_joins INTEGER DEFAULT 0",
+  ];
+  for (const sql of migrations) {
+    try {
+      await pool.query(sql);
+    } catch {
+      // Column may already exist
+    }
+  }
+}
 
-// Migrate existing databases: add new columns if they don't exist
-try { db.exec("ALTER TABLE rooms ADD COLUMN host_token TEXT"); } catch {}
-try { db.exec("ALTER TABLE rooms ADD COLUMN status TEXT DEFAULT 'live'"); } catch {}
-try { db.exec("ALTER TABLE rooms ADD COLUMN start_time TEXT"); } catch {}
-try { db.exec("ALTER TABLE rooms ADD COLUMN end_time TEXT"); } catch {}
-
-export function createRoom(
+export async function createRoom(
   code: string,
   name: string,
   videoUrl: string,
   hostToken: string,
   status: string = "live",
   startTime?: string,
-  endTime?: string
+  endTime?: string,
+  subtitleUrl?: string
 ) {
-  const stmt = db.prepare(
-    "INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  const result = await pool.query(
+    `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [code, name, videoUrl, hostToken, status, startTime || null, endTime || null, subtitleUrl || null]
   );
-  return stmt.run(code, name, videoUrl, hostToken, status, startTime || null, endTime || null);
+  return result.rows[0];
 }
 
-export function getRoomByCode(code: string) {
-  const stmt = db.prepare("SELECT * FROM rooms WHERE code = ?");
-  return stmt.get(code) as
+export async function getRoomByCode(code: string) {
+  const result = await pool.query("SELECT * FROM rooms WHERE code = $1", [code]);
+  return result.rows[0] as
     | {
         id: number;
         code: string;
@@ -62,34 +79,36 @@ export function getRoomByCode(code: string) {
         status: string;
         start_time: string | null;
         end_time: string | null;
+        subtitle_url: string | null;
+        peak_viewers: number;
+        total_joins: number;
         created_at: string;
       }
     | undefined;
 }
 
-export function getRoomHostToken(code: string): string | null {
-  const stmt = db.prepare("SELECT host_token FROM rooms WHERE code = ?");
-  const row = stmt.get(code) as { host_token: string } | undefined;
-  return row?.host_token || null;
+export async function getRoomHostToken(code: string): Promise<string | null> {
+  const result = await pool.query("SELECT host_token FROM rooms WHERE code = $1", [code]);
+  return result.rows[0]?.host_token || null;
 }
 
-export function updateRoomStatus(code: string, status: string) {
-  const stmt = db.prepare("UPDATE rooms SET status = ? WHERE code = ?");
-  return stmt.run(status, code);
+export async function updateRoomStatus(code: string, status: string) {
+  await pool.query("UPDATE rooms SET status = $1 WHERE code = $2", [status, code]);
 }
 
-export function addComment(roomCode: string, username: string, message: string) {
-  const stmt = db.prepare(
-    "INSERT INTO comments (room_code, username, message) VALUES (?, ?, ?)"
+export async function addComment(roomCode: string, username: string, message: string) {
+  await pool.query(
+    "INSERT INTO comments (room_code, username, message) VALUES ($1, $2, $3)",
+    [roomCode, username, message]
   );
-  return stmt.run(roomCode, username, message);
 }
 
-export function getCommentsByRoom(roomCode: string) {
-  const stmt = db.prepare(
-    "SELECT * FROM comments WHERE room_code = ? ORDER BY created_at ASC"
+export async function getCommentsByRoom(roomCode: string) {
+  const result = await pool.query(
+    "SELECT * FROM comments WHERE room_code = $1 ORDER BY created_at ASC",
+    [roomCode]
   );
-  return stmt.all(roomCode) as Array<{
+  return result.rows as Array<{
     id: number;
     room_code: string;
     username: string;
@@ -98,4 +117,15 @@ export function getCommentsByRoom(roomCode: string) {
   }>;
 }
 
-export default db;
+export async function getAllRoomsWithStats() {
+  const result = await pool.query(`
+    SELECT r.code, r.name, r.status, r.peak_viewers, r.total_joins, r.created_at,
+           (SELECT COUNT(*) FROM comments WHERE room_code = r.code) as total_comments
+    FROM rooms r
+    ORDER BY r.created_at DESC
+  `);
+  return result.rows;
+}
+
+export { pool };
+export default pool;

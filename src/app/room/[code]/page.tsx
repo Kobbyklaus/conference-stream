@@ -7,6 +7,8 @@ import ChatPanel from "@/components/ChatPanel";
 import ViewerCount from "@/components/ViewerCount";
 import HostControls from "@/components/HostControls";
 import ParticipantPanel from "@/components/ParticipantPanel";
+import ReactionBar from "@/components/ReactionBar";
+import ReactionOverlay from "@/components/ReactionOverlay";
 import { getSocket, disconnectSocket } from "@/lib/socket";
 
 interface Room {
@@ -16,6 +18,7 @@ interface Room {
   status: string;
   start_time: string | null;
   end_time: string | null;
+  subtitle_url: string | null;
 }
 
 export default function RoomPage() {
@@ -336,15 +339,18 @@ export default function RoomPage() {
         {/* Video area + host controls */}
         <div className="w-full md:flex-[3] flex flex-col min-w-0">
           <div className="flex-1 p-2 md:p-4 flex items-start md:items-center justify-center">
-            <div className="w-full">
+            <div className="w-full relative">
+              <ReactionOverlay roomCode={code} />
               <VideoPlayer
                 url={room.video_url}
                 isHost={isHost}
                 roomCode={code}
                 hostToken={hostToken || undefined}
+                subtitleUrl={room.subtitle_url || undefined}
               />
             </div>
           </div>
+          <ReactionBar roomCode={code} />
           {isHost && hostToken && (
             <HostControls roomCode={code} hostToken={hostToken} />
           )}

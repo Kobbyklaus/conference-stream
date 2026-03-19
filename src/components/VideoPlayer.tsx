@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { getSocket } from "@/lib/socket";
 
-// Extend window for YouTube IFrame API
 declare global {
   interface Window {
     YT: typeof YT;
@@ -16,9 +15,16 @@ interface VideoPlayerProps {
   isHost: boolean;
   roomCode: string;
   hostToken?: string;
+  subtitleUrl?: string;
 }
 
-function parseVideoInfo(url: string): { provider: "youtube" | "vimeo"; id: string } | null {
+type VideoInfo =
+  | { provider: "youtube"; id: string }
+  | { provider: "vimeo"; id: string }
+  | { provider: "googledrive"; id: string }
+  | { provider: "direct"; url: string };
+
+function parseVideoInfo(url: string): VideoInfo | null {
   const trimmed = url.trim();
 
   // YouTube
@@ -32,6 +38,17 @@ function parseVideoInfo(url: string): { provider: "youtube" | "vimeo"; id: strin
     /(?:https?:\/\/)?(?:www\.)?(?:player\.)?vimeo\.com\/(?:video\/|channels\/[^/]+\/)?(\d+)/
   );
   if (vimeoMatch) return { provider: "vimeo", id: vimeoMatch[1] };
+
+  // Google Drive
+  const driveMatch = trimmed.match(
+    /(?:https?:\/\/)?drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/
+  );
+  if (driveMatch) return { provider: "googledrive", id: driveMatch[1] };
+
+  // Direct video URL
+  if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed)) {
+    return { provider: "direct", url: trimmed };
+  }
 
   return null;
 }
@@ -47,15 +64,12 @@ function loadYouTubeAPI(): Promise<void> {
       resolve();
       return;
     }
-
     ytReadyCallbacks.push(resolve);
-
     if (!ytApiLoaded) {
       ytApiLoaded = true;
       const script = document.createElement("script");
       script.src = "https://www.youtube.com/iframe_api";
       document.head.appendChild(script);
-
       window.onYouTubeIframeAPIReady = () => {
         ytApiReady = true;
         ytReadyCallbacks.forEach((cb) => cb());
@@ -65,16 +79,17 @@ function loadYouTubeAPI(): Promise<void> {
   });
 }
 
-export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoPlayerProps) {
+export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitleUrl }: VideoPlayerProps) {
   const videoInfo = parseVideoInfo(url);
   const playerRef = useRef<YT.Player | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const syncTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingSyncRef = useRef<{ currentTime: number; isPlaying: boolean } | null>(null);
   const ignoreStateChangeRef = useRef(false);
   const lastSeekTimeRef = useRef(0);
+  const [captionsOn, setCaptionsOn] = useState(true);
 
-  // Emit host events
   const emitHostEvent = useCallback(
     (event: string, currentTime: number) => {
       if (!isHost || !hostToken) return;
@@ -84,6 +99,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
     [isHost, hostToken, roomCode]
   );
 
+  // YouTube effect
   useEffect(() => {
     if (!videoInfo || videoInfo.provider !== "youtube") return;
 
@@ -92,7 +108,6 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
     loadYouTubeAPI().then(() => {
       if (!mounted || !containerRef.current) return;
 
-      // Create a div for the player
       const playerDiv = document.createElement("div");
       playerDiv.id = `yt-player-${roomCode}`;
       containerRef.current.innerHTML = "";
@@ -108,10 +123,10 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
           disablekb: isHost ? 0 : 1,
           modestbranding: 1,
           rel: 0,
+          cc_load_policy: 1,
         },
         events: {
           onReady: () => {
-            // Apply any pending sync (for ALL users including host on refresh)
             if (pendingSyncRef.current) {
               const { currentTime, isPlaying } = pendingSyncRef.current;
               ignoreStateChangeRef.current = true;
@@ -127,7 +142,6 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
               pendingSyncRef.current = null;
             }
 
-            // Host: start sync tick interval
             if (isHost && hostToken) {
               syncTickRef.current = setInterval(() => {
                 if (playerRef.current) {
@@ -145,13 +159,11 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
           },
           onStateChange: (event: YT.OnStateChangeEvent) => {
             if (!isHost || ignoreStateChangeRef.current) return;
-
             const player = playerRef.current;
             if (!player) return;
             const currentTime = player.getCurrentTime();
 
             if (event.data === window.YT.PlayerState.PLAYING) {
-              // Check if this is a seek (large jump from expected position)
               const timeSinceLastAction = (Date.now() - lastSeekTimeRef.current) / 1000;
               if (timeSinceLastAction > 1) {
                 emitHostEvent("host-play", currentTime);
@@ -166,23 +178,18 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
       });
     });
 
-    // Listen for sync events (both host on refresh and viewers)
     const socket = getSocket();
     const initialSyncDoneRef = { current: false };
 
     const handleSync = ({ currentTime, isPlaying }: { currentTime: number; isPlaying: boolean }) => {
       const player = playerRef.current;
       if (!player || typeof player.seekTo !== "function") {
-        // Player not ready yet, store for later
         pendingSyncRef.current = { currentTime, isPlaying };
         return;
       }
-
-      // Host: only apply first sync (on refresh/rejoin), ignore subsequent ones
       if (isHost && initialSyncDoneRef.current) return;
       initialSyncDoneRef.current = true;
 
-      // Only seek if drift is significant (> 2 seconds)
       const playerTime = player.getCurrentTime();
       if (Math.abs(playerTime - currentTime) > 2) {
         ignoreStateChangeRef.current = true;
@@ -191,12 +198,8 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
           ignoreStateChangeRef.current = false;
         }, 500);
       }
-
-      if (isPlaying) {
-        player.playVideo();
-      } else {
-        player.pauseVideo();
-      }
+      if (isPlaying) player.playVideo();
+      else player.pauseVideo();
     };
 
     socket.on("sync-playback", handleSync);
@@ -206,17 +209,95 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
       if (syncTickRef.current) clearInterval(syncTickRef.current);
       mounted = false;
     };
-  }, [videoInfo?.id, isHost, roomCode, hostToken, emitHostEvent]);
+  }, [videoInfo?.provider === "youtube" ? (videoInfo as { id: string }).id : null, isHost, roomCode, hostToken, emitHostEvent]);
+
+  // Direct video (HTML5 <video>) sync effect
+  useEffect(() => {
+    if (!videoInfo || videoInfo.provider !== "direct") return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Host: emit play/pause/seek events
+    const handlePlay = () => {
+      if (!isHost || ignoreStateChangeRef.current) return;
+      emitHostEvent("host-play", video.currentTime);
+    };
+
+    const handlePause = () => {
+      if (!isHost || ignoreStateChangeRef.current) return;
+      emitHostEvent("host-pause", video.currentTime);
+    };
+
+    const handleSeeked = () => {
+      if (!isHost || ignoreStateChangeRef.current) return;
+      emitHostEvent("host-seek", video.currentTime);
+    };
+
+    if (isHost) {
+      video.addEventListener("play", handlePlay);
+      video.addEventListener("pause", handlePause);
+      video.addEventListener("seeked", handleSeeked);
+
+      // Start sync tick
+      syncTickRef.current = setInterval(() => {
+        if (hostToken) {
+          const socket = getSocket();
+          socket.emit("host-sync-tick", {
+            roomCode,
+            hostToken,
+            currentTime: video.currentTime,
+            isPlaying: !video.paused,
+          });
+        }
+      }, 5000);
+    }
+
+    // Listen for sync events
+    const socket = getSocket();
+    const initialSyncDoneRef = { current: false };
+
+    const handleSync = ({ currentTime, isPlaying }: { currentTime: number; isPlaying: boolean }) => {
+      if (isHost && initialSyncDoneRef.current) return;
+      initialSyncDoneRef.current = true;
+
+      if (Math.abs(video.currentTime - currentTime) > 2) {
+        ignoreStateChangeRef.current = true;
+        video.currentTime = currentTime;
+        setTimeout(() => {
+          ignoreStateChangeRef.current = false;
+        }, 500);
+      }
+      if (isPlaying && video.paused) video.play();
+      else if (!isPlaying && !video.paused) video.pause();
+    };
+
+    socket.on("sync-playback", handleSync);
+
+    // Apply pending sync
+    if (pendingSyncRef.current) {
+      handleSync(pendingSyncRef.current);
+      pendingSyncRef.current = null;
+    }
+
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+      video.removeEventListener("seeked", handleSeeked);
+      socket.off("sync-playback", handleSync);
+      if (syncTickRef.current) clearInterval(syncTickRef.current);
+    };
+  }, [videoInfo?.provider === "direct" ? (videoInfo as { url: string }).url : null, isHost, roomCode, hostToken, emitHostEvent]);
 
   if (!videoInfo) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-900 rounded-xl">
+      <div className="flex items-center justify-center h-full bg-gray-900 rounded-xl p-8">
         <p className="text-gray-400">Unsupported video URL</p>
       </div>
     );
   }
 
-  // Vimeo fallback (no sync support)
+  // Vimeo
   if (videoInfo.provider === "vimeo") {
     return (
       <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
@@ -230,11 +311,75 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
     );
   }
 
+  // Google Drive
+  if (videoInfo.provider === "googledrive") {
+    return (
+      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
+        <iframe
+          src={`https://drive.google.com/file/d/${videoInfo.id}/preview`}
+          className="absolute inset-0 w-full h-full"
+          allow="autoplay; fullscreen"
+          allowFullScreen
+        />
+        {!isHost && (
+          <div className="absolute inset-0 z-10" style={{ pointerEvents: "auto" }} />
+        )}
+      </div>
+    );
+  }
+
+  // Direct video (MP4, WebM, etc.)
+  if (videoInfo.provider === "direct") {
+    return (
+      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full"
+          controls={isHost}
+          autoPlay={isHost}
+          playsInline
+        >
+          <source src={videoInfo.url} />
+          {subtitleUrl && (
+            <track
+              kind="subtitles"
+              src={subtitleUrl}
+              srcLang="en"
+              label="English"
+              default={captionsOn}
+            />
+          )}
+        </video>
+        {/* CC toggle for direct videos with subtitles */}
+        {subtitleUrl && (
+          <button
+            onClick={() => {
+              setCaptionsOn(!captionsOn);
+              const video = videoRef.current;
+              if (video && video.textTracks[0]) {
+                video.textTracks[0].mode = captionsOn ? "hidden" : "showing";
+              }
+            }}
+            className={`absolute bottom-3 right-3 z-20 px-2 py-1 rounded text-xs font-bold transition-colors ${
+              captionsOn
+                ? "bg-white text-black"
+                : "bg-gray-800/80 text-gray-400"
+            }`}
+          >
+            CC
+          </button>
+        )}
+        {!isHost && (
+          <div className="absolute inset-0 z-10" style={{ pointerEvents: "auto" }} />
+        )}
+      </div>
+    );
+  }
+
   // YouTube with IFrame API
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
-      {/* Overlay to prevent viewer interaction with YouTube controls */}
       {!isHost && (
         <div className="absolute inset-0 z-10" style={{ pointerEvents: "auto" }} />
       )}
