@@ -118,8 +118,8 @@ app.prepare().then(() => {
       // Broadcast updated participant list
       broadcastParticipants(io, roomCode);
 
-      // Send current playback state to late joiners (not the host)
-      if (!isHost && roomPlaybackState.has(roomCode)) {
+      // Send current playback state to ALL joiners (including host on refresh)
+      if (roomPlaybackState.has(roomCode)) {
         const state = roomPlaybackState.get(roomCode);
         let adjustedTime = state.currentTime;
         // If video is playing, calculate where it should be now
@@ -296,6 +296,30 @@ app.prepare().then(() => {
       }
     });
   });
+
+  // Auto-start scheduled rooms when their start_time passes (check every 10s)
+  setInterval(() => {
+    try {
+      const dbPath = path.join(process.cwd(), "conference.db");
+      const db = new Database(dbPath);
+      const scheduledRooms = db.prepare(
+        "SELECT code, start_time FROM rooms WHERE status = 'scheduled' AND start_time IS NOT NULL"
+      ).all();
+      db.close();
+
+      const now = new Date();
+      for (const room of scheduledRooms) {
+        const startTime = new Date(room.start_time);
+        if (startTime <= now) {
+          setRoomStatus(room.code, "live");
+          io.to(room.code).emit("room-started");
+          console.log(`Auto-started room ${room.code}`);
+        }
+      }
+    } catch (err) {
+      console.error("Auto-start check failed:", err);
+    }
+  }, 10000);
 
   server.listen(PORT, () => {
     console.log(`> Conference Stream ready on http://localhost:${PORT}`);

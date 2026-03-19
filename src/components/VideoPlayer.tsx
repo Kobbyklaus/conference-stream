@@ -111,15 +111,19 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
         },
         events: {
           onReady: () => {
-            // Apply any pending sync (for late joiners)
-            if (pendingSyncRef.current && !isHost) {
+            // Apply any pending sync (for ALL users including host on refresh)
+            if (pendingSyncRef.current) {
               const { currentTime, isPlaying } = pendingSyncRef.current;
+              ignoreStateChangeRef.current = true;
               playerRef.current?.seekTo(currentTime, true);
               if (isPlaying) {
                 playerRef.current?.playVideo();
               } else {
                 playerRef.current?.pauseVideo();
               }
+              setTimeout(() => {
+                ignoreStateChangeRef.current = false;
+              }, 1000);
               pendingSyncRef.current = null;
             }
 
@@ -162,45 +166,43 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken }: VideoP
       });
     });
 
-    // Viewer: listen for sync events
-    if (!isHost) {
-      const socket = getSocket();
+    // Listen for sync events (both host on refresh and viewers)
+    const socket = getSocket();
+    const initialSyncDoneRef = { current: false };
 
-      const handleSync = ({ currentTime, isPlaying }: { currentTime: number; isPlaying: boolean }) => {
-        const player = playerRef.current;
-        if (!player || typeof player.seekTo !== "function") {
-          // Player not ready yet, store for later
-          pendingSyncRef.current = { currentTime, isPlaying };
-          return;
-        }
+    const handleSync = ({ currentTime, isPlaying }: { currentTime: number; isPlaying: boolean }) => {
+      const player = playerRef.current;
+      if (!player || typeof player.seekTo !== "function") {
+        // Player not ready yet, store for later
+        pendingSyncRef.current = { currentTime, isPlaying };
+        return;
+      }
 
-        // Only seek if drift is significant (> 2 seconds)
-        const playerTime = player.getCurrentTime();
-        if (Math.abs(playerTime - currentTime) > 2) {
-          ignoreStateChangeRef.current = true;
-          player.seekTo(currentTime, true);
-          setTimeout(() => {
-            ignoreStateChangeRef.current = false;
-          }, 500);
-        }
+      // Host: only apply first sync (on refresh/rejoin), ignore subsequent ones
+      if (isHost && initialSyncDoneRef.current) return;
+      initialSyncDoneRef.current = true;
 
-        if (isPlaying) {
-          player.playVideo();
-        } else {
-          player.pauseVideo();
-        }
-      };
+      // Only seek if drift is significant (> 2 seconds)
+      const playerTime = player.getCurrentTime();
+      if (Math.abs(playerTime - currentTime) > 2) {
+        ignoreStateChangeRef.current = true;
+        player.seekTo(currentTime, true);
+        setTimeout(() => {
+          ignoreStateChangeRef.current = false;
+        }, 500);
+      }
 
-      socket.on("sync-playback", handleSync);
+      if (isPlaying) {
+        player.playVideo();
+      } else {
+        player.pauseVideo();
+      }
+    };
 
-      return () => {
-        socket.off("sync-playback", handleSync);
-        if (syncTickRef.current) clearInterval(syncTickRef.current);
-        mounted = false;
-      };
-    }
+    socket.on("sync-playback", handleSync);
 
     return () => {
+      socket.off("sync-playback", handleSync);
       if (syncTickRef.current) clearInterval(syncTickRef.current);
       mounted = false;
     };
