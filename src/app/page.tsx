@@ -1,4 +1,3 @@
-import CreateRoom from "@/components/CreateRoom";
 import JoinRoom from "@/components/JoinRoom";
 
 export default function Home() {
@@ -7,13 +6,21 @@ export default function Home() {
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold mb-2">Conference Stream</h1>
         <p className="text-gray-400">
-          Host online conferences and watch together in real-time
+          Join online conferences and watch together in real-time
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl">
-        <CreateRoom />
+      <div className="w-full max-w-sm">
         <JoinRoom />
+
+        <div className="text-center mt-6">
+          <a
+            href="/admin"
+            className="text-sm text-gray-500 hover:text-indigo-400 transition-colors"
+          >
+            Host a Conference &rarr;
+          </a>
+        </div>
       </div>
     </main>
   );

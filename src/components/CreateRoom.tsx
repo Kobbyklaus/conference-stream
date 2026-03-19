@@ -5,8 +5,10 @@ import { useState } from "react";
 export default function CreateRoom() {
   const [name, setName] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [startTimeVal, setStartTimeVal] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [endTimeVal, setEndTimeVal] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [hostToken, setHostToken] = useState("");
   const [error, setError] = useState("");
@@ -31,8 +33,8 @@ export default function CreateRoom() {
         body: JSON.stringify({
           name,
           videoUrl,
-          startTime: startTime ? new Date(startTime).toISOString() : undefined,
-          endTime: endTime ? new Date(endTime).toISOString() : undefined,
+          startTime: startDate && startTimeVal ? new Date(`${startDate}T${startTimeVal}`).toISOString() : undefined,
+          endTime: endDate && endTimeVal ? new Date(`${endDate}T${endTimeVal}`).toISOString() : undefined,
         }),
       });
 
@@ -132,26 +134,34 @@ export default function CreateRoom() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">
-            Start Time <span className="text-gray-600">(optional)</span>
-          </label>
+      <div className="space-y-3">
+        <p className="text-sm text-gray-400">Start <span className="text-gray-600">(optional)</span></p>
+        <div className="grid grid-cols-2 gap-2">
           <input
-            type="datetime-local"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+          />
+          <input
+            type="time"
+            value={startTimeVal}
+            onChange={(e) => setStartTimeVal(e.target.value)}
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
           />
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">
-            End Time <span className="text-gray-600">(optional)</span>
-          </label>
+        <p className="text-sm text-gray-400">End <span className="text-gray-600">(optional)</span></p>
+        <div className="grid grid-cols-2 gap-2">
           <input
-            type="datetime-local"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+          />
+          <input
+            type="time"
+            value={endTimeVal}
+            onChange={(e) => setEndTimeVal(e.target.value)}
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
           />
         </div>
