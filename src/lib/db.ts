@@ -42,7 +42,7 @@ function getSqliteDb() {
       );
     `);
   }
-  return sqliteDb as ReturnType<typeof import("better-sqlite3")["default"]>;
+  return sqliteDb;
 }
 
 /* ---------- PostgreSQL implementation (production) ---------- */
