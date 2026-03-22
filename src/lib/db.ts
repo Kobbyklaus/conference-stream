@@ -5,18 +5,19 @@ const isProduction = process.env.NODE_ENV === "production" && process.env.DATABA
 
 /* ---------- SQLite implementation (local dev) ---------- */
 
-let sqliteDb: ReturnType<typeof import("better-sqlite3")["default"]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sqliteDb: any | null = null;
 
 function getSqliteDb() {
   if (!sqliteDb) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Database = require("better-sqlite3");
     const dbPath = path.join(process.cwd(), "conference.db");
-    sqliteDb = new Database(dbPath) as ReturnType<typeof Database>;
-    (sqliteDb as ReturnType<typeof Database>).pragma("journal_mode = WAL");
+    sqliteDb = new Database(dbPath) as any;
+    (sqliteDb as any).pragma("journal_mode = WAL");
 
     // Create tables
-    (sqliteDb as ReturnType<typeof Database>).exec(`
+    (sqliteDb as any).exec(`
       CREATE TABLE IF NOT EXISTS rooms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         code TEXT UNIQUE NOT NULL,

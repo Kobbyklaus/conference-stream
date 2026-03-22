@@ -6,3 +6,4 @@ conference.db-wal
 .claude/
 .env
 .env.local
+.vercel
