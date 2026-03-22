@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <defs>
+    <linearGradient id="screen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <!-- Main screen frame -->
+  <rect x="100" y="40" width="600" height="380" rx="16" fill="url(#screen)" stroke="#334155" stroke-width="2"/>
+  <!-- Top bar -->
+  <rect x="100" y="40" width="600" height="45" rx="16" fill="url(#bar)"/>
+  <rect x="100" y="69" width="600" height="16" fill="url(#bar)"/>
+  <!-- Title in top bar -->
+  <text x="400" y="68" text-anchor="middle" fill="white" font-family="system-ui" font-size="16" font-weight="bold">190 Nations Pastoral Conference</text>
+  <!-- Live indicator -->
+  <circle cx="145" cy="62" r="5" fill="#ef4444"/>
+  <text x="158" y="67" fill="#fca5a5" font-family="system-ui" font-size="11" font-weight="bold">LIVE</text>
+  <!-- Participant count -->
+  <text x="660" y="67" text-anchor="end" fill="#93c5fd" font-family="system-ui" font-size="12">247 Pastors Online</text>
+  <!-- Video grid - 6 participants -->
+  <!-- Row 1 -->
+  <rect x="130" y="100" width="170" height="120" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="215" cy="145" r="25" fill="#3b82f6" opacity="0.6"/>
+  <circle cx="215" cy="135" r="12" fill="#93c5fd" opacity="0.5"/>
+  <path d="M193 163 Q215 150 237 163" fill="#93c5fd" opacity="0.4"/>
+  <text x="215" y="210" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="10">Bishop Dag H-M</text>
+  <rect x="127" y="94" width="50" height="18" rx="4" fill="#dc2626" opacity="0.9"/>
+  <text x="152" y="106" text-anchor="middle" fill="white" font-family="system-ui" font-size="9" font-weight="bold">Speaker</text>
+  <!-- Participant 2 -->
+  <rect x="315" y="100" width="170" height="120" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="400" cy="145" r="22" fill="#8b5cf6" opacity="0.5"/>
+  <circle cx="400" cy="136" r="10" fill="#c4b5fd" opacity="0.5"/>
+  <path d="M382 157 Q400 147 418 157" fill="#c4b5fd" opacity="0.4"/>
+  <text x="400" y="210" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="10">Pastor James - Nigeria</text>
+  <!-- Participant 3 -->
+  <rect x="500" y="100" width="170" height="120" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="585" cy="145" r="22" fill="#059669" opacity="0.5"/>
+  <circle cx="585" cy="136" r="10" fill="#6ee7b7" opacity="0.5"/>
+  <path d="M567 157 Q585 147 603 157" fill="#6ee7b7" opacity="0.4"/>
+  <text x="585" y="210" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="10">Pastora Maria - Chile</text>
+  <!-- Row 2 -->
+  <rect x="130" y="235" width="170" height="120" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="215" cy="280" r="22" fill="#d97706" opacity="0.5"/>
+  <circle cx="215" cy="271" r="10" fill="#fcd34d" opacity="0.5"/>
+  <path d="M197 292 Q215 282 233 292" fill="#fcd34d" opacity="0.4"/>
+  <text x="215" y="345" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="10">Rev. Kim - South Korea</text>
+  <!-- Participant 5 -->
+  <rect x="315" y="235" width="170" height="120" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="400" cy="280" r="22" fill="#e11d48" opacity="0.5"/>
+  <circle cx="400" cy="271" r="10" fill="#fda4af" opacity="0.5"/>
+  <path d="M382 292 Q400 282 418 292" fill="#fda4af" opacity="0.4"/>
+  <text x="400" y="345" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="10">Pastor David - Kenya</text>
+  <!-- Participant 6 -->
+  <rect x="500" y="235" width="170" height="120" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="585" cy="280" r="22" fill="#0891b2" opacity="0.5"/>
+  <circle cx="585" cy="271" r="10" fill="#67e8f9" opacity="0.5"/>
+  <path d="M567 292 Q585 282 603 292" fill="#67e8f9" opacity="0.4"/>
+  <text x="585" y="345" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="10">Pastor Ravi - India</text>
+  <!-- Bottom control bar -->
+  <rect x="100" y="390" width="600" height="30" rx="0" fill="#0f172a"/>
+  <rect x="100" y="390" width="600" height="30" rx="0" ry="0" fill="#1e293b" opacity="0.8"/>
+  <!-- Control icons -->
+  <circle cx="340" cy="405" r="12" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <rect x="336" y="399" width="8" height="12" rx="2" fill="#94a3b8"/>
+  <circle cx="380" cy="405" r="12" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <rect x="373" y="401" width="14" height="8" rx="2" fill="#94a3b8"/>
+  <circle cx="420" cy="405" r="12" fill="#dc2626"/>
+  <rect x="413" y="403" width="14" height="4" rx="2" fill="white"/>
+  <circle cx="460" cy="405" r="12" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <rect x="454" y="400" width="12" height="10" rx="1" fill="#94a3b8"/>
+  <!-- Stand -->
+  <rect x="350" y="420" width="100" height="8" rx="2" fill="#334155"/>
+  <rect x="370" y="428" width="60" height="4" rx="2" fill="#475569"/>
+  <!-- Chat sidebar hint -->
+  <rect x="710" y="100" width="6" height="300" rx="3" fill="#334155" opacity="0.5"/>
+</svg>

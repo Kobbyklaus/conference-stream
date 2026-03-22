@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500">
+  <defs>
+    <filter id="mapglow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1000" height="500" fill="#0f172a"/>
+  <!-- Simplified world map outlines -->
+  <g fill="#3b82f6" fill-opacity="0.15" stroke="#3b82f6" stroke-width="0.8" stroke-opacity="0.4">
+    <!-- North America -->
+    <path d="M150 120 Q170 100 210 95 Q240 90 260 100 Q275 108 280 120 Q285 135 278 150 Q270 162 260 170 Q248 178 235 182 Q220 186 208 180 Q195 172 185 162 Q170 148 160 138 Q152 130 150 120Z"/>
+    <!-- Central America -->
+    <path d="M208 180 Q215 190 220 200 Q222 210 218 218 Q212 225 205 222 Q200 215 202 205 Q204 195 208 180Z"/>
+    <!-- South America -->
+    <path d="M220 230 Q240 220 255 228 Q268 238 275 260 Q280 285 278 310 Q274 340 265 360 Q255 378 240 385 Q228 388 220 375 Q212 358 208 335 Q205 310 207 285 Q210 260 215 245 Q218 235 220 230Z"/>
+    <!-- Europe -->
+    <path d="M440 90 Q460 80 485 85 Q505 90 515 102 Q520 112 515 125 Q508 135 495 138 Q480 142 465 138 Q452 132 445 120 Q438 108 440 90Z"/>
+    <!-- Africa -->
+    <path d="M460 170 Q480 155 505 162 Q520 170 530 190 Q538 215 535 245 Q530 280 520 310 Q510 335 495 348 Q480 355 468 342 Q455 325 450 300 Q445 270 448 240 Q450 210 455 190 Q457 178 460 170Z"/>
+    <!-- Middle East -->
+    <path d="M530 140 Q548 130 565 138 Q578 148 580 165 Q578 180 568 188 Q555 192 542 185 Q532 175 528 160 Q526 148 530 140Z"/>
+    <!-- Asia -->
+    <path d="M580 80 Q620 68 670 72 Q720 78 760 95 Q790 110 800 135 Q805 160 790 180 Q770 198 740 205 Q710 210 680 205 Q650 198 625 185 Q600 170 588 150 Q575 128 575 105 Q576 90 580 80Z"/>
+    <!-- India subcontinent -->
+    <path d="M640 195 Q655 188 668 195 Q678 205 680 225 Q678 248 670 265 Q660 278 648 272 Q638 262 635 245 Q632 225 636 210 Q638 200 640 195Z"/>
+    <!-- Southeast Asia -->
+    <path d="M720 210 Q740 200 758 210 Q770 222 768 240 Q762 255 748 260 Q735 262 725 252 Q718 240 718 225 Q719 215 720 210Z"/>
+    <!-- Australia -->
+    <path d="M760 320 Q790 308 820 315 Q845 325 852 345 Q855 365 842 380 Q825 392 800 388 Q778 382 765 365 Q755 348 758 332 Q759 324 760 320Z"/>
+    <!-- New Zealand -->
+    <path d="M870 370 Q878 365 885 370 Q890 378 887 388 Q882 395 875 392 Q868 385 868 378 Q869 372 870 370Z"/>
+  </g>
+  <!-- Glowing connection dots -->
+  <g filter="url(#mapglow)">
+    <circle cx="220" cy="130" r="4" fill="#fbbf24"/>
+    <circle cx="250" cy="115" r="3" fill="#fbbf24"/>
+    <circle cx="205" cy="168" r="3" fill="#fbbf24"/>
+    <circle cx="245" cy="195" r="2.5" fill="#fbbf24"/>
+    <circle cx="260" cy="275" r="4" fill="#fbbf24"/>
+    <circle cx="235" cy="340" r="3.5" fill="#fbbf24"/>
+    <circle cx="248" cy="245" r="3" fill="#fbbf24"/>
+    <circle cx="240" cy="295" r="2.5" fill="#fbbf24"/>
+    <circle cx="470" cy="100" r="3.5" fill="#fbbf24"/>
+    <circle cx="490" cy="115" r="3" fill="#fbbf24"/>
+    <circle cx="505" cy="98" r="2.5" fill="#fbbf24"/>
+    <circle cx="490" cy="200" r="4" fill="#fbbf24"/>
+    <circle cx="510" cy="290" r="3.5" fill="#fbbf24"/>
+    <circle cx="475" cy="310" r="3" fill="#fbbf24"/>
+    <circle cx="480" cy="180" r="2.5" fill="#fbbf24"/>
+    <circle cx="555" cy="160" r="3" fill="#fbbf24"/>
+    <circle cx="660" cy="240" r="4" fill="#fbbf24"/>
+    <circle cx="750" cy="230" r="3.5" fill="#fbbf24"/>
+    <circle cx="740" cy="150" r="3" fill="#fbbf24"/>
+    <circle cx="720" cy="215" r="3" fill="#fbbf24"/>
+    <circle cx="700" cy="190" r="2.5" fill="#fbbf24"/>
+    <circle cx="800" cy="345" r="3.5" fill="#fbbf24"/>
+    <circle cx="880" cy="380" r="2.5" fill="#fbbf24"/>
+  </g>
+  <!-- Connection arcs -->
+  <g stroke="#fbbf24" stroke-width="0.5" opacity="0.15" fill="none">
+    <path d="M220 130 Q350 50 470 100"/>
+    <path d="M470 100 Q600 50 740 150"/>
+    <path d="M220 130 Q240 200 260 275"/>
+    <path d="M470 100 Q480 140 490 200"/>
+    <path d="M490 200 Q580 180 660 240"/>
+    <path d="M660 240 Q720 200 750 230"/>
+    <path d="M750 230 Q780 280 800 345"/>
+    <path d="M235 340 Q350 380 475 310"/>
+    <path d="M555 160 Q610 190 660 240"/>
+  </g>
+  <!-- Legend -->
+  <g transform="translate(50, 460)">
+    <circle cx="0" cy="0" r="4" fill="#fbbf24"/>
+    <text x="12" y="4" fill="#94a3b8" font-family="system-ui" font-size="11">Active pastor connections across 99 countries</text>
+  </g>
+</svg>

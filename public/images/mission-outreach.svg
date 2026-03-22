@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <!-- Central cross/ministry symbol -->
+  <g transform="translate(300, 180)">
+    <circle r="60" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.3"/>
+    <circle r="90" fill="none" stroke="#3b82f6" stroke-width="1" opacity="0.15"/>
+    <circle r="120" fill="none" stroke="#3b82f6" stroke-width="0.5" opacity="0.1"/>
+    <!-- Open book -->
+    <path d="M-30 -10 Q-15 -20 0 -10 Q15 -20 30 -10 L30 20 Q15 10 0 20 Q-15 10 -30 20 Z" fill="none" stroke="#60a5fa" stroke-width="2"/>
+    <line x1="0" y1="-10" x2="0" y2="20" stroke="#60a5fa" stroke-width="1.5"/>
+    <!-- Cross above book -->
+    <line x1="0" y1="-45" x2="0" y2="-20" stroke="#fbbf24" stroke-width="2.5"/>
+    <line x1="-12" y1="-35" x2="12" y2="-35" stroke="#fbbf24" stroke-width="2.5"/>
+  </g>
+  <!-- People around the world - representing pastors -->
+  <!-- Person 1 - top left -->
+  <g transform="translate(130, 120)">
+    <circle r="16" fill="#3b82f6" opacity="0.3"/>
+    <circle cy="-6" r="7" fill="#93c5fd" opacity="0.6"/>
+    <path d="M-10 8 Q0 0 10 8" fill="#93c5fd" opacity="0.4"/>
+    <text y="28" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="9">Lagos</text>
+  </g>
+  <!-- Person 2 - top right -->
+  <g transform="translate(470, 120)">
+    <circle r="16" fill="#8b5cf6" opacity="0.3"/>
+    <circle cy="-6" r="7" fill="#c4b5fd" opacity="0.6"/>
+    <path d="M-10 8 Q0 0 10 8" fill="#c4b5fd" opacity="0.4"/>
+    <text y="28" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="9">Seoul</text>
+  </g>
+  <!-- Person 3 - left -->
+  <g transform="translate(100, 280)">
+    <circle r="16" fill="#059669" opacity="0.3"/>
+    <circle cy="-6" r="7" fill="#6ee7b7" opacity="0.6"/>
+    <path d="M-10 8 Q0 0 10 8" fill="#6ee7b7" opacity="0.4"/>
+    <text y="28" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="9">Santiago</text>
+  </g>
+  <!-- Person 4 - right -->
+  <g transform="translate(500, 280)">
+    <circle r="16" fill="#d97706" opacity="0.3"/>
+    <circle cy="-6" r="7" fill="#fcd34d" opacity="0.6"/>
+    <path d="M-10 8 Q0 0 10 8" fill="#fcd34d" opacity="0.4"/>
+    <text y="28" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="9">Mumbai</text>
+  </g>
+  <!-- Person 5 - bottom left -->
+  <g transform="translate(170, 400)">
+    <circle r="16" fill="#e11d48" opacity="0.3"/>
+    <circle cy="-6" r="7" fill="#fda4af" opacity="0.6"/>
+    <path d="M-10 8 Q0 0 10 8" fill="#fda4af" opacity="0.4"/>
+    <text y="28" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="9">Nairobi</text>
+  </g>
+  <!-- Person 6 - bottom right -->
+  <g transform="translate(430, 400)">
+    <circle r="16" fill="#0891b2" opacity="0.3"/>
+    <circle cy="-6" r="7" fill="#67e8f9" opacity="0.6"/>
+    <path d="M-10 8 Q0 0 10 8" fill="#67e8f9" opacity="0.4"/>
+    <text y="28" text-anchor="middle" fill="#94a3b8" font-family="system-ui" font-size="9">Manila</text>
+  </g>
+  <!-- Connection lines from center to people -->
+  <g stroke="#3b82f6" stroke-width="1" opacity="0.2" stroke-dasharray="4 4">
+    <line x1="300" y1="180" x2="130" y2="120"/>
+    <line x1="300" y1="180" x2="470" y2="120"/>
+    <line x1="300" y1="180" x2="100" y2="280"/>
+    <line x1="300" y1="180" x2="500" y2="280"/>
+    <line x1="300" y1="180" x2="170" y2="400"/>
+    <line x1="300" y1="180" x2="430" y2="400"/>
+  </g>
+  <!-- Small book icons going from center to people -->
+  <g fill="#fbbf24" opacity="0.5">
+    <rect x="200" y="142" width="12" height="9" rx="1.5" transform="rotate(-20 206 146)"/>
+    <rect x="380" y="142" width="12" height="9" rx="1.5" transform="rotate(20 386 146)"/>
+    <rect x="185" y="225" width="12" height="9" rx="1.5" transform="rotate(-35 191 229)"/>
+    <rect x="405" y="225" width="12" height="9" rx="1.5" transform="rotate(35 411 229)"/>
+    <rect x="225" y="305" width="12" height="9" rx="1.5" transform="rotate(-50 231 309)"/>
+    <rect x="370" y="305" width="12" height="9" rx="1.5" transform="rotate(50 376 309)"/>
+  </g>
+  <!-- Bottom text -->
+  <text x="300" y="475" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="13">Equipping Pastors Across Every Nation</text>
+</svg>
