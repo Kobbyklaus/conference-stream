@@ -53,59 +53,64 @@ const languages = [
   "Polish", "Romanian", "Turkish", "Urdu", "Bengali", "Nepali",
 ];
 
+const stats = [
+  { value: "100+", label: "Book Titles" },
+  { value: "50+", label: "Languages" },
+  { value: "8M+", label: "Copies Distributed" },
+  { value: "190", label: "Nations Reached" },
+];
+
 export default function Books() {
   return (
     <main>
       {/* Hero */}
-      <section className="relative py-24 sm:py-32 overflow-hidden">
+      <section className="relative py-28 sm:py-36 overflow-hidden">
         <div className="absolute inset-0">
           <img src="/images/bishop-dag-quote.jpg" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-950/80 via-slate-950/85 to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-950/50 via-slate-950/85 to-slate-950" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-          <div className="inline-block bg-purple-600/20 border border-purple-500/30 rounded-full px-4 py-1.5 text-purple-300 text-sm font-medium mb-6">
+          <div className="animate-fade-in inline-block bg-amber-600/20 border border-amber-500/30 rounded-full px-5 py-2 text-amber-300 text-sm font-medium mb-6 shadow-lg shadow-amber-900/20">
             Over 8 Million Copies Distributed
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-6">
+          <h1 className="animate-fade-in-delay text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-gradient-warm">
             Free Ministry Books
           </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className="animate-fade-in-delay-2 text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
             Access the complete library of Dag Heward-Mills&apos; books on
             leadership, church planting, loyalty, and pastoral ministry —
             available in 50+ languages, completely free.
           </p>
-          <Link
-            href="/contact"
-            className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3.5 rounded-xl text-lg font-semibold transition-all hover:scale-105"
-          >
-            Request Free Books
-          </Link>
-          <div className="mt-12 max-w-2xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/contact"
+              className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3.5 rounded-xl text-lg font-semibold transition-all hover:scale-105 shadow-lg shadow-purple-600/25"
+            >
+              Request Free Books
+            </Link>
+            <Link
+              href="/conferences"
+              className="bg-amber-600 hover:bg-amber-500 text-white px-8 py-3.5 rounded-xl text-lg font-semibold transition-all hover:scale-105 shadow-lg shadow-amber-600/25"
+            >
+              Join a Conference
+            </Link>
+          </div>
+          <div className="mt-12 max-w-2xl mx-auto animate-scale-in">
             <img src="/images/books-collection.svg" alt="Collection of ministry books by Dag Heward-Mills" className="w-full h-auto rounded-xl" />
           </div>
         </div>
       </section>
 
       {/* Stats */}
-      <section className="py-12 bg-slate-900/50 border-y border-slate-800">
+      <section className="py-14 bg-gradient-to-r from-amber-950/20 via-slate-900/50 to-amber-950/20 border-y border-amber-500/10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-purple-400">100+</div>
-              <div className="text-gray-400 text-sm">Book Titles</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-purple-400">50+</div>
-              <div className="text-gray-400 text-sm">Languages</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-purple-400">8M+</div>
-              <div className="text-gray-400 text-sm">Copies Distributed</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-purple-400">190</div>
-              <div className="text-gray-400 text-sm">Nations Reached</div>
-            </div>
+            {stats.map((stat) => (
+              <div key={stat.label} className="animate-count-up">
+                <div className="text-3xl sm:text-4xl font-bold text-amber-400">{stat.value}</div>
+                <div className="text-gray-400 text-sm mt-1">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -113,26 +118,34 @@ export default function Books() {
       {/* Book Categories */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-14">
-            Book Library
-          </h2>
-          <div className="space-y-12">
+          <div className="text-center mb-14">
+            <div className="inline-block bg-amber-600/20 border border-amber-500/30 rounded-full px-4 py-1.5 text-amber-300 text-sm font-medium mb-4">
+              Browse by Category
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gradient-warm">
+              Book Library
+            </h2>
+          </div>
+          <div className="space-y-14">
             {categories.map((cat) => (
               <div key={cat.name}>
-                <h3 className="text-xl font-bold text-blue-400 mb-6 pb-2 border-b border-slate-800">
+                <h3 className="text-xl font-bold text-amber-400 mb-6 pb-3 border-b border-amber-500/20 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50" />
                   {cat.name}
                 </h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {cat.books.map((book) => (
                     <div
                       key={book.title}
-                      className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-purple-500/50 transition-all hover:-translate-y-1"
+                      className="glass-card card-warm-hover border border-amber-500/10 rounded-xl p-5 transition-all hover:-translate-y-1"
                     >
-                      <div className="w-full h-32 bg-gradient-to-br from-purple-900/50 to-indigo-900/50 rounded-lg flex items-center justify-center mb-4">
-                        <span className="text-4xl">📖</span>
+                      <div className="w-full h-32 bg-gradient-to-br from-amber-900/30 via-slate-800/50 to-blue-900/30 rounded-lg flex items-center justify-center mb-4 border border-amber-500/10">
+                        <svg className="w-10 h-10 text-amber-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        </svg>
                       </div>
-                      <h4 className="font-semibold mb-2">{book.title}</h4>
-                      <p className="text-gray-400 text-sm">
+                      <h4 className="font-semibold mb-2 text-white">{book.title}</h4>
+                      <p className="text-gray-400 text-sm leading-relaxed">
                         {book.description}
                       </p>
                     </div>
@@ -145,24 +158,29 @@ export default function Books() {
       </section>
 
       {/* Languages */}
-      <section className="py-20 bg-slate-900/30">
+      <section className="py-20 bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Available in 50+ Languages
-          </h2>
-          <p className="text-gray-400 text-center mb-10">
-            Books are being translated into new languages every month.
-          </p>
+          <div className="text-center mb-10">
+            <div className="inline-block bg-amber-600/20 border border-amber-500/30 rounded-full px-4 py-1.5 text-amber-300 text-sm font-medium mb-4">
+              Worldwide Reach
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gradient-warm mb-4">
+              Available in 50+ Languages
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Books are being translated into new languages every month.
+            </p>
+          </div>
           <div className="flex flex-wrap justify-center gap-3">
             {languages.map((lang) => (
               <span
                 key={lang}
-                className="bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 text-sm text-gray-300"
+                className="glass-card border border-amber-500/10 rounded-full px-4 py-1.5 text-sm text-gray-300 hover:border-amber-500/30 hover:text-amber-300 transition-all cursor-default"
               >
                 {lang}
               </span>
             ))}
-            <span className="bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 text-sm text-gray-500">
+            <span className="bg-blue-600/20 border border-blue-500/20 rounded-full px-4 py-1.5 text-sm text-blue-300">
               + 26 more...
             </span>
           </div>
@@ -170,25 +188,25 @@ export default function Books() {
       </section>
 
       {/* CTA */}
-      <section className="py-20">
+      <section className="py-20 bg-gradient-to-r from-amber-950/30 via-slate-900/50 to-blue-950/30">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gradient-warm">
             Get Your Free Books Today
           </h2>
-          <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
+          <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto leading-relaxed">
             Whether you need digital copies for yourself or printed books for
             your congregation, we&apos;ll help you get the resources you need.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/contact"
-              className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3.5 rounded-xl text-lg font-semibold transition-all hover:scale-105"
+              className="bg-amber-600 hover:bg-amber-500 text-white px-8 py-3.5 rounded-xl text-lg font-semibold transition-all hover:scale-105 shadow-lg shadow-amber-600/25"
             >
               Request Books
             </Link>
             <Link
               href="/conferences"
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-8 py-3.5 rounded-xl text-lg font-semibold transition-all hover:scale-105"
+              className="bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 px-8 py-3.5 rounded-xl text-lg font-semibold transition-all hover:scale-105"
             >
               Join a Conference
             </Link>

@@ -5,16 +5,28 @@ import { useState } from "react";
 export default function CreateRoom() {
   const [name, setName] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [startTimeVal, setStartTimeVal] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [endTimeVal, setEndTimeVal] = useState("");
+  const [startDateTime, setStartDateTime] = useState("");
+  const [endDateTime, setEndDateTime] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [hostToken, setHostToken] = useState("");
   const [error, setError] = useState("");
   const [subtitleUrl, setSubtitleUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState("");
+
+  // Format a Date as "YYYY-MM-DDThh:mm" in LOCAL time (required by datetime-local inputs)
+  function toLocalDateTimeStr(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }
+
+  // Constrain date pickers to a reasonable range
+  const today = toLocalDateTimeStr(new Date());
+  const maxDate = toLocalDateTimeStr(new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000));
 
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text);
@@ -28,6 +40,25 @@ export default function CreateRoom() {
     setLoading(true);
 
     try {
+      // datetime-local gives us "YYYY-MM-DDThh:mm" in local time.
+      // new Date() parses this as local time, .toISOString() converts to UTC.
+      function parseDateTime(value: string): string | undefined {
+        if (!value) return undefined;
+        const dt = new Date(value);
+        if (isNaN(dt.getTime())) {
+          throw new Error("Invalid date or time value.");
+        }
+        return dt.toISOString();
+      }
+
+      const parsedStart = parseDateTime(startDateTime);
+      const parsedEnd = parseDateTime(endDateTime);
+
+      // Validate end is after start
+      if (parsedStart && parsedEnd && new Date(parsedEnd) <= new Date(parsedStart)) {
+        throw new Error("End time must be after start time.");
+      }
+
       const res = await fetch("/api/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,8 +66,8 @@ export default function CreateRoom() {
           name,
           videoUrl,
           subtitleUrl: subtitleUrl || undefined,
-          startTime: startDate && startTimeVal ? new Date(`${startDate}T${startTimeVal}`).toISOString() : undefined,
-          endTime: endDate && endTimeVal ? new Date(`${endDate}T${endTimeVal}`).toISOString() : undefined,
+          startTime: parsedStart,
+          endTime: parsedEnd,
         }),
       });
 
@@ -109,7 +140,7 @@ export default function CreateRoom() {
   }
 
   return (
-    <form onSubmit={handleCreate} className="bg-gray-900 rounded-xl p-6 space-y-4">
+    <form onSubmit={handleCreate} noValidate className="bg-gray-900 rounded-xl p-6 space-y-4">
       <h2 className="text-xl font-bold">Create a Conference</h2>
 
       <div>
@@ -127,7 +158,7 @@ export default function CreateRoom() {
       <div>
         <label className="block text-sm text-gray-400 mb-1">Video URL</label>
         <input
-          type="url"
+          type="text"
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
           placeholder="YouTube, Vimeo, Google Drive, or .mp4 URL"
@@ -141,7 +172,7 @@ export default function CreateRoom() {
           Subtitle URL <span className="text-gray-600">(optional, .vtt file)</span>
         </label>
         <input
-          type="url"
+          type="text"
           value={subtitleUrl}
           onChange={(e) => setSubtitleUrl(e.target.value)}
           placeholder="https://example.com/subtitles.vtt"
@@ -150,33 +181,25 @@ export default function CreateRoom() {
       </div>
 
       <div className="space-y-3">
-        <p className="text-sm text-gray-400">Start <span className="text-gray-600">(optional)</span></p>
-        <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Start <span className="text-gray-600">(optional)</span></label>
           <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
-          />
-          <input
-            type="time"
-            value={startTimeVal}
-            onChange={(e) => setStartTimeVal(e.target.value)}
+            type="datetime-local"
+            value={startDateTime}
+            onChange={(e) => setStartDateTime(e.target.value)}
+            min={today}
+            max={maxDate}
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
           />
         </div>
-        <p className="text-sm text-gray-400">End <span className="text-gray-600">(optional)</span></p>
-        <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">End <span className="text-gray-600">(optional)</span></label>
           <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
-          />
-          <input
-            type="time"
-            value={endTimeVal}
-            onChange={(e) => setEndTimeVal(e.target.value)}
+            type="datetime-local"
+            value={endDateTime}
+            onChange={(e) => setEndDateTime(e.target.value)}
+            min={startDateTime || today}
+            max={maxDate}
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
           />
         </div>
