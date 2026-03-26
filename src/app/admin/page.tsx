@@ -66,6 +66,26 @@ export default function AdminPage() {
     }
   }
 
+  async function handleForceEnd(code: string) {
+    if (!confirm("Are you sure you want to forcibly end this room? It will be permanently removed from active rooms.")) return;
+    
+    try {
+      const res = await fetch("/api/admin/rooms/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to end room");
+      
+      // Instantly update the UI local state
+      setStats(prev => prev.map(r => r.code === code ? { ...r, status: "ended" } : r));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to end the room.");
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem("admin_token");
     setAuthenticated(false);
@@ -355,12 +375,22 @@ export default function AdminPage() {
                       <p className="text-white font-semibold">{room.peak_viewers}</p>
                       <p className="text-gray-600 text-xs">Peak</p>
                     </div>
-                    <a
-                      href={`/room/${room.code}`}
-                      className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-medium transition-colors"
-                    >
-                      Open
-                    </a>
+                    <div className="flex gap-2">
+                      {(room.status === "live" || room.status === "scheduled") && (
+                        <button
+                          onClick={() => handleForceEnd(room.code)}
+                          className="bg-red-900/40 hover:bg-red-800/60 text-red-400 px-4 py-2 rounded-xl text-xs font-medium transition-colors border border-red-800/50"
+                        >
+                          End Room
+                        </button>
+                      )}
+                      <a
+                        href={`/room/${room.code}`}
+                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-medium transition-colors"
+                      >
+                        Open
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))
