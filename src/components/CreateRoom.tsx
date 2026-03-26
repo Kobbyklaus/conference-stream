@@ -41,11 +41,6 @@ export default function CreateRoom() {
       if (startDate) parsedStart = startDate.toISOString();
       if (endDate) parsedEnd = endDate.toISOString();
 
-      // Validate that if one is provided, the other doesn't HAVE to be provided for a scheduled start,
-      // but logic states usually both are expected. The existing fix required both or neither.
-      if ((startDate && !endDate) || (!startDate && endDate)) {
-        throw new Error("Please fill in both the date and time, or leave both empty.");
-      }
 
       // Validate end is after start
       if (startDate && endDate && endDate <= startDate) {
