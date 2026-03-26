@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function CreateRoom() {
   const [name, setName] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [startDateTime, setStartDateTime] = useState("");
-  const [endDateTime, setEndDateTime] = useState("");
+  const startRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLInputElement>(null);
   const [roomCode, setRoomCode] = useState("");
   const [hostToken, setHostToken] = useState("");
   const [error, setError] = useState("");
@@ -51,8 +51,8 @@ export default function CreateRoom() {
         return dt.toISOString();
       }
 
-      const parsedStart = parseDateTime(startDateTime);
-      const parsedEnd = parseDateTime(endDateTime);
+      const parsedStart = parseDateTime(startRef.current?.value || "");
+      const parsedEnd = parseDateTime(endRef.current?.value || "");
 
       // Validate end is after start
       if (parsedStart && parsedEnd && new Date(parsedEnd) <= new Date(parsedStart)) {
@@ -185,8 +185,8 @@ export default function CreateRoom() {
           <label className="block text-sm text-gray-400 mb-1">Start <span className="text-gray-600">(optional)</span></label>
           <input
             type="datetime-local"
-            value={startDateTime}
-            onChange={(e) => setStartDateTime(e.target.value)}
+            ref={startRef}
+            defaultValue=""
             min={today}
             max={maxDate}
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
@@ -196,9 +196,9 @@ export default function CreateRoom() {
           <label className="block text-sm text-gray-400 mb-1">End <span className="text-gray-600">(optional)</span></label>
           <input
             type="datetime-local"
-            value={endDateTime}
-            onChange={(e) => setEndDateTime(e.target.value)}
-            min={startDateTime || today}
+            ref={endRef}
+            defaultValue=""
+            min={today}
             max={maxDate}
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
           />
