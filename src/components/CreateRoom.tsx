@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function CreateRoom() {
   const [name, setName] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const startRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLInputElement>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [roomCode, setRoomCode] = useState("");
   const [hostToken, setHostToken] = useState("");
   const [error, setError] = useState("");
@@ -14,19 +16,11 @@ export default function CreateRoom() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState("");
 
-  // Format a Date as "YYYY-MM-DDThh:mm" in LOCAL time (required by datetime-local inputs)
-  function toLocalDateTimeStr(d: Date): string {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-  }
+  // Remove unused toLocalDateTimeStr function now that we use Date objects natively
 
-  // Constrain date pickers to a reasonable range
-  const today = toLocalDateTimeStr(new Date());
-  const maxDate = toLocalDateTimeStr(new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000));
+  // Using DatePicker, min/max dates are just Date objects
+  const minDateConfig = new Date();
+  const maxDateConfig = new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000);
 
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text);
@@ -40,22 +34,21 @@ export default function CreateRoom() {
     setLoading(true);
 
     try {
-      // datetime-local gives us "YYYY-MM-DDThh:mm" in local time.
-      // new Date() parses this as local time, .toISOString() converts to UTC.
-      function parseDateTime(value: string): string | undefined {
-        if (!value) return undefined;
-        const dt = new Date(value);
-        if (isNaN(dt.getTime())) {
-          throw new Error("Invalid date or time value.");
-        }
-        return dt.toISOString();
+      // Since DatePicker outputs Date objects, we just need to toISOString them.
+      let parsedStart: string | undefined = undefined;
+      let parsedEnd: string | undefined = undefined;
+
+      if (startDate) parsedStart = startDate.toISOString();
+      if (endDate) parsedEnd = endDate.toISOString();
+
+      // Validate that if one is provided, the other doesn't HAVE to be provided for a scheduled start,
+      // but logic states usually both are expected. The existing fix required both or neither.
+      if ((startDate && !endDate) || (!startDate && endDate)) {
+        throw new Error("Please fill in both the date and time, or leave both empty.");
       }
 
-      const parsedStart = parseDateTime(startRef.current?.value || "");
-      const parsedEnd = parseDateTime(endRef.current?.value || "");
-
       // Validate end is after start
-      if (parsedStart && parsedEnd && new Date(parsedEnd) <= new Date(parsedStart)) {
+      if (startDate && endDate && endDate <= startDate) {
         throw new Error("End time must be after start time.");
       }
 
@@ -183,24 +176,36 @@ export default function CreateRoom() {
       <div className="space-y-3">
         <div>
           <label className="block text-sm text-gray-400 mb-1">Start <span className="text-gray-600">(optional)</span></label>
-          <input
-            type="datetime-local"
-            ref={startRef}
-            defaultValue=""
-            min={today}
-            max={maxDate}
-            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+          <DatePicker
+            selected={startDate}
+            onChange={(date: Date | null) => setStartDate(date)}
+            showTimeSelect
+            timeFormat="HH:mm"
+            timeIntervals={15}
+            timeCaption="Time"
+            dateFormat="MMMM d, yyyy h:mm aa"
+            minDate={minDateConfig}
+            maxDate={maxDateConfig}
+            placeholderText="Select start date & time"
+            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            wrapperClassName="w-full"
           />
         </div>
         <div>
           <label className="block text-sm text-gray-400 mb-1">End <span className="text-gray-600">(optional)</span></label>
-          <input
-            type="datetime-local"
-            ref={endRef}
-            defaultValue=""
-            min={today}
-            max={maxDate}
-            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]"
+          <DatePicker
+            selected={endDate}
+            onChange={(date: Date | null) => setEndDate(date)}
+            showTimeSelect
+            timeFormat="HH:mm"
+            timeIntervals={15}
+            timeCaption="Time"
+            dateFormat="MMMM d, yyyy h:mm aa"
+            minDate={startDate || minDateConfig}
+            maxDate={maxDateConfig}
+            placeholderText="Select end date & time"
+            className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            wrapperClassName="w-full"
           />
         </div>
       </div>
