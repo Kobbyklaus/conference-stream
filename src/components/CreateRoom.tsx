@@ -183,10 +183,14 @@ export default function CreateRoom() {
             timeFormat="HH:mm"
             timeIntervals={15}
             timeCaption="Time"
-            dateFormat="MMMM d, yyyy h:mm aa"
+            dateFormat="dd/MM/yyyy HH:mm"
+            showMonthDropdown
+            showYearDropdown
+            dropdownMode="select"
+            isClearable
             minDate={minDateConfig}
             maxDate={maxDateConfig}
-            placeholderText="Select start date & time"
+            placeholderText="dd/mm/yyyy hh:mm"
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             wrapperClassName="w-full"
           />
@@ -200,10 +204,14 @@ export default function CreateRoom() {
             timeFormat="HH:mm"
             timeIntervals={15}
             timeCaption="Time"
-            dateFormat="MMMM d, yyyy h:mm aa"
+            dateFormat="dd/MM/yyyy HH:mm"
+            showMonthDropdown
+            showYearDropdown
+            dropdownMode="select"
+            isClearable
             minDate={startDate || minDateConfig}
             maxDate={maxDateConfig}
-            placeholderText="Select end date & time"
+            placeholderText="dd/mm/yyyy hh:mm"
             className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             wrapperClassName="w-full"
           />
