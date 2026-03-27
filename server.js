@@ -126,6 +126,17 @@ app.prepare().then(async () => {
     let currentUser = null;
     let isHost = false;
 
+    // Allow components to request current state on mount
+    socket.on("request-participants", (requestedRoom) => {
+      const participants = roomParticipants.get(requestedRoom) || [];
+      socket.emit("participant-list", participants);
+    });
+
+    socket.on("request-viewer-count", (requestedRoom) => {
+      const count = roomViewers.get(requestedRoom) || 0;
+      socket.emit("viewer-count", count);
+    });
+
     socket.on("join-room", async ({ roomCode, username, hostToken }) => {
       try {
         // Check room status

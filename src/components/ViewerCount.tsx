@@ -13,6 +13,9 @@ export default function ViewerCount({ roomCode }: { roomCode: string }) {
       setCount(newCount);
     });
 
+    // Request the current viewer count immediately upon mounting
+    socket.emit("request-viewer-count", roomCode);
+
     return () => {
       socket.off("viewer-count");
     };

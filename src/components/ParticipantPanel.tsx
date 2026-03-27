@@ -31,6 +31,9 @@ export default function ParticipantPanel({
       setParticipants(list);
     });
 
+    // Request the current participant list immediately upon mounting
+    socket.emit("request-participants", roomCode);
+
     return () => {
       socket.off("participant-list");
     };
