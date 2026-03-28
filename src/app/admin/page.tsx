@@ -3,6 +3,112 @@
 import { useState, useEffect } from "react";
 import CreateRoom from "@/components/CreateRoom";
 
+function escapeCSV(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function AttendanceModal({
+  code,
+  roomName,
+  onClose,
+}: {
+  code: string;
+  roomName: string;
+  onClose: () => void;
+}) {
+  const [attendance, setAttendance] = useState<{ username: string; country: string; joinedAt: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/admin/attendance/${code}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAttendance(data);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [code]);
+
+  function handleExport() {
+    const header = "Name,Country,Joined At";
+    const rows = attendance.map(
+      (r) =>
+        `${escapeCSV(r.username)},${escapeCSV(r.country || "")},${escapeCSV(r.joinedAt || "")}`
+    );
+    const csv = [header, ...rows].join("\n");
+    const date = new Date().toISOString().split("T")[0];
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `attendance-${code}-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+          <div>
+            <h2 className="text-lg font-bold text-white">Attendance List</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{roomName}</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleExport}
+              disabled={attendance.length === 0}
+              className="px-4 py-1.5 text-xs font-medium bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-600/30 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Export CSV
+            </button>
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : attendance.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+              <p>No attendance data recorded.</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="text-gray-500 border-b border-slate-800">
+                  <th className="pb-3 font-medium">Name</th>
+                  <th className="pb-3 font-medium">Country</th>
+                  <th className="pb-3 font-medium">Joined At</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {attendance.map((record, i) => (
+                  <tr key={i} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="py-3 font-medium text-white">{record.username}</td>
+                    <td className="py-3 text-gray-400">{record.country || "—"}</td>
+                    <td className="py-3 text-gray-500 text-xs">
+                      {new Date(record.joinedAt).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface RoomStats {
   code: string;
   name: string;
@@ -19,8 +125,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [stats, setStats] = useState<RoomStats[]>([]);
-  const [showAnalytics, setShowAnalytics] = useState(false);
   const [activeTab, setActiveTab] = useState<"create" | "rooms" | "analytics">("create");
+  const [selectedAttendanceRoom, setSelectedAttendanceRoom] = useState<{code: string, name: string} | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
@@ -420,6 +526,7 @@ export default function AdminPage() {
                         <th className="px-6 py-3 font-medium text-right">Peak</th>
                         <th className="px-6 py-3 font-medium text-right">Joins</th>
                         <th className="px-6 py-3 font-medium text-right">Messages</th>
+                        <th className="px-6 py-3 font-medium text-center">Attendance</th>
                         <th className="px-6 py-3 font-medium">Created</th>
                       </tr>
                     </thead>
@@ -442,6 +549,14 @@ export default function AdminPage() {
                           <td className="px-6 py-4 text-right text-white">{room.peak_viewers}</td>
                           <td className="px-6 py-4 text-right text-white">{room.total_joins}</td>
                           <td className="px-6 py-4 text-right text-white">{room.total_comments}</td>
+                          <td className="px-6 py-4 text-center">
+                            <button
+                              onClick={() => setSelectedAttendanceRoom({ code: room.code, name: room.name })}
+                              className="text-xs bg-slate-800 hover:bg-slate-700 text-gray-300 px-3 py-1.5 rounded disabled:opacity-50 transition-colors"
+                            >
+                              View List
+                            </button>
+                          </td>
                           <td className="px-6 py-4 text-xs text-gray-500">
                             {new Date(room.created_at).toLocaleDateString()}
                           </td>
@@ -455,6 +570,14 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {selectedAttendanceRoom && (
+        <AttendanceModal
+          code={selectedAttendanceRoom.code}
+          roomName={selectedAttendanceRoom.name}
+          onClose={() => setSelectedAttendanceRoom(null)}
+        />
+      )}
     </main>
   );
 }

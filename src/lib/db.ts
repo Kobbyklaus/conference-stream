@@ -40,6 +40,15 @@ function getSqliteDb() {
         message TEXT NOT NULL,
         created_at TEXT DEFAULT (datetime('now'))
       );
+
+      CREATE TABLE IF NOT EXISTS attendance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_code TEXT NOT NULL,
+        username TEXT NOT NULL,
+        country TEXT,
+        joined_at TEXT DEFAULT (datetime('now')),
+        UNIQUE(room_code, username)
+      );
     `);
   }
   return sqliteDb;
@@ -87,6 +96,14 @@ export async function initDb() {
         username TEXT NOT NULL,
         message TEXT NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS attendance (
+        id SERIAL PRIMARY KEY,
+        room_code TEXT NOT NULL,
+        username TEXT NOT NULL,
+        country TEXT,
+        joined_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(room_code, username)
       );
     `);
     const migrations = [
@@ -199,6 +216,26 @@ export async function getAllRoomsWithStats() {
       FROM rooms r ORDER BY r.created_at DESC
     `).all();
   }
+}
+
+export async function getAttendanceByRoom(roomCode: string) {
+  if (isProduction) {
+    const result = await getPgPool().query(
+      "SELECT username, country, joined_at as \"joinedAt\" FROM attendance WHERE room_code = $1 ORDER BY joined_at ASC",
+      [roomCode]
+    );
+    return result.rows as AttendanceRow[];
+  } else {
+    return getSqliteDb().prepare(
+      "SELECT username, country, joined_at as \"joinedAt\" FROM attendance WHERE room_code = ? ORDER BY joined_at ASC"
+    ).all(roomCode) as AttendanceRow[];
+  }
+}
+
+interface AttendanceRow {
+  username: string;
+  country: string;
+  joinedAt: string;
 }
 
 interface RoomRow {

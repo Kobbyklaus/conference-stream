@@ -44,6 +44,15 @@ async function initDb() {
       message TEXT NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS attendance (
+      id SERIAL PRIMARY KEY,
+      room_code TEXT NOT NULL,
+      username TEXT NOT NULL,
+      country TEXT,
+      joined_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(room_code, username)
+    );
   `);
 
   // Add columns if they don't exist (for existing databases)
@@ -137,7 +146,7 @@ app.prepare().then(async () => {
       socket.emit("viewer-count", count);
     });
 
-    socket.on("join-room", async ({ roomCode, username, hostToken }) => {
+    socket.on("join-room", async ({ roomCode, username, country, hostToken }) => {
       try {
         // Check room status
         const roomInfo = await getRoomStatus(roomCode);
@@ -178,14 +187,21 @@ app.prepare().then(async () => {
         // Broadcast updated participant list
         broadcastParticipants(io, roomCode);
 
-        // Track analytics
+        // Track analytics and attendance
         try {
           await pool.query(
             "UPDATE rooms SET total_joins = total_joins + 1, peak_viewers = GREATEST(peak_viewers, $1) WHERE code = $2",
             [count, roomCode]
           );
+          
+          if (country !== undefined) {
+             await pool.query(
+               "INSERT INTO attendance (room_code, username, country) VALUES ($1, $2, $3) ON CONFLICT (room_code, username) DO NOTHING",
+               [roomCode, username, country]
+             );
+          }
         } catch (err) {
-          console.error("Failed to update analytics:", err);
+          console.error("Failed to update analytics/attendance:", err);
         }
 
         // Send current playback state to ALL joiners (including host on refresh)
