@@ -468,7 +468,7 @@ export default function AdminPage() {
 
         {/* Tab Content */}
         {activeTab === "create" && (
-          <div className="max-w-lg">
+          <div className="max-w-2xl mx-auto">
             <CreateRoom />
           </div>
         )}

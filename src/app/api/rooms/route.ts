@@ -3,7 +3,7 @@ import { createRoom, getRoomByCode } from "@/lib/db";
 import { nanoid } from "nanoid";
 
 export async function POST(req: NextRequest) {
-  const { name, videoUrl, startTime, endTime, subtitleUrl, paypalUrl, regionalLabel, regionalUrl } = await req.json();
+  const { name, videoUrl, startTime, endTime, subtitleUrl, paypalUrl, regionalLabel, regionalUrl, flyerUrl } = await req.json();
 
   if (!name || !videoUrl) {
     return NextResponse.json({ error: "Name and video URL are required" }, { status: 400 });
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   await createRoom(
     code, name, videoUrl, hostToken, status, startTime, endTime, subtitleUrl,
-    paypalUrl, regionalLabel, regionalUrl
+    paypalUrl, regionalLabel, regionalUrl, flyerUrl
   );
 
   return NextResponse.json({ code, name, videoUrl, hostToken, status, startTime, endTime });

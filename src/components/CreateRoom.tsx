@@ -15,8 +15,34 @@ export default function CreateRoom() {
   const [paypalUrl, setPaypalUrl] = useState("");
   const [regionalLabel, setRegionalLabel] = useState("");
   const [regionalUrl, setRegionalUrl] = useState("");
+  const [flyerUrl, setFlyerUrl] = useState("");
+  const [flyerUploading, setFlyerUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState("");
+
+  async function handleFlyerSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setFlyerUploading(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") || "" : "";
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "x-admin-token": token },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setFlyerUrl(data.url);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Flyer upload failed");
+    } finally {
+      setFlyerUploading(false);
+    }
+  }
 
   // Remove unused toLocalDateTimeStr function now that we use Date objects natively
 
@@ -61,6 +87,7 @@ export default function CreateRoom() {
           paypalUrl: paypalUrl || undefined,
           regionalLabel: regionalLabel || undefined,
           regionalUrl: regionalUrl || undefined,
+          flyerUrl: flyerUrl || undefined,
         }),
       });
 
@@ -129,31 +156,66 @@ export default function CreateRoom() {
   }
 
   return (
-    <form onSubmit={handleCreate} noValidate className="surface rounded-2xl p-6 space-y-4">
-      <h2 className="text-xl font-bold">Create a Conference</h2>
+    <form onSubmit={handleCreate} noValidate className="surface rounded-3xl p-8 md:p-10 space-y-6">
+      <div>
+        <h2 className="text-2xl font-extrabold heading-gradient">Create a Conference</h2>
+        <p className="text-sm text-violet-200/70 mt-1">Set up your stream — pastors will see this when they join.</p>
+      </div>
 
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Conference Name</label>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">Conference Name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Q1 Product Launch"
-          className="w-full input-field rounded-lg px-3 py-2 text-sm"
+          placeholder="e.g. Peru Pastors Conference 2026"
+          className="w-full input-field rounded-xl px-4 py-3 text-base"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Video URL</label>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">Video URL</label>
         <input
           type="text"
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
           placeholder="YouTube, Vimeo, Google Drive, or .mp4 URL"
-          className="w-full input-field rounded-lg px-3 py-2 text-sm"
+          className="w-full input-field rounded-xl px-4 py-3 text-base"
           required
         />
+      </div>
+
+      {/* Flyer */}
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+          Conference Flyer <span className="text-gray-500 font-normal">(optional)</span>
+        </label>
+        {flyerUrl ? (
+          <div className="flex items-center gap-4 surface rounded-xl p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={flyerUrl} alt="Flyer preview" className="h-24 w-auto rounded-lg object-cover" />
+            <div className="flex-1">
+              <p className="text-sm text-emerald-300 font-medium">Flyer added ✓</p>
+              <button
+                type="button"
+                onClick={() => setFlyerUrl("")}
+                className="text-xs text-gray-400 hover:text-white underline mt-1"
+              >
+                Remove / change
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-white/15 hover:border-fuchsia-400/40 rounded-xl px-4 py-6 cursor-pointer transition-colors text-center">
+            <span className="text-2xl">🖼️</span>
+            <span className="text-sm text-violet-200/80">
+              {flyerUploading ? "Uploading…" : "Click to upload a flyer image"}
+            </span>
+            <span className="text-xs text-gray-500">JPG, PNG, WebP or GIF · up to 8 MB</span>
+            <input type="file" accept="image/*" onChange={handleFlyerSelect} className="hidden" disabled={flyerUploading} />
+          </label>
+        )}
       </div>
 
       <div>

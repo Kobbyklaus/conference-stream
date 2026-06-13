@@ -63,6 +63,7 @@ function getSqliteDb() {
       "ALTER TABLE rooms ADD COLUMN paypal_url TEXT",
       "ALTER TABLE rooms ADD COLUMN regional_label TEXT",
       "ALTER TABLE rooms ADD COLUMN regional_url TEXT",
+      "ALTER TABLE rooms ADD COLUMN flyer_url TEXT",
       "ALTER TABLE attendance ADD COLUMN email TEXT",
     ];
     for (const sql of sqliteMigrations) {
@@ -137,6 +138,7 @@ export async function initDb() {
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS paypal_url TEXT",
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS regional_label TEXT",
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS regional_url TEXT",
+      "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS flyer_url TEXT",
       "ALTER TABLE attendance ADD COLUMN IF NOT EXISTS email TEXT",
     ];
     for (const sql of migrations) {
@@ -158,24 +160,25 @@ export async function createRoom(
   subtitleUrl?: string,
   paypalUrl?: string,
   regionalLabel?: string,
-  regionalUrl?: string
+  regionalUrl?: string,
+  flyerUrl?: string
 ) {
   if (isProduction) {
     const result = await getPgPool().query(
-      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url, paypal_url, regional_label, regional_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url, paypal_url, regional_label, regional_url, flyer_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [code, name, videoUrl, hostToken, status, startTime || null, endTime || null, subtitleUrl || null,
-       paypalUrl || null, regionalLabel || null, regionalUrl || null]
+       paypalUrl || null, regionalLabel || null, regionalUrl || null, flyerUrl || null]
     );
     return result.rows[0];
   } else {
     const db = getSqliteDb();
     const stmt = db.prepare(
-      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url, paypal_url, regional_label, regional_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url, paypal_url, regional_label, regional_url, flyer_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     stmt.run(code, name, videoUrl, hostToken, status, startTime || null, endTime || null, subtitleUrl || null,
-      paypalUrl || null, regionalLabel || null, regionalUrl || null);
+      paypalUrl || null, regionalLabel || null, regionalUrl || null, flyerUrl || null);
     return db.prepare("SELECT * FROM rooms WHERE code = ?").get(code);
   }
 }

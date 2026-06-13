@@ -10,3 +10,6 @@ conference.db-wal
 
 .DS_Store
 *.tsbuildinfo
+
+# uploaded flyers (runtime, per-server)
+public/uploads/

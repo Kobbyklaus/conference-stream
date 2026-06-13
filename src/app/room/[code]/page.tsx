@@ -25,6 +25,7 @@ interface Room {
   paypal_url?: string | null;
   regional_label?: string | null;
   regional_url?: string | null;
+  flyer_url?: string | null;
 }
 
 export default function RoomPage() {
@@ -246,9 +247,11 @@ export default function RoomPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-400 mb-2">{t("removed")}</h1>
           <p className="text-gray-400">{t("removedMsg")}</p>
-          <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
-            {t("backHome")}
-          </a>
+          {isHost && (
+            <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
+              {t("backHome")}
+            </a>
+          )}
         </div>
       </main>
     );
@@ -261,9 +264,11 @@ export default function RoomPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-400 mb-2">{t("error")}</h1>
           <p className="text-gray-400">{t("roomNotFound")}</p>
-          <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
-            {t("backHome")}
-          </a>
+          {isHost && (
+            <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
+              {t("backHome")}
+            </a>
+          )}
         </div>
       </main>
     );
@@ -284,9 +289,11 @@ export default function RoomPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-300 mb-2">{t("conferenceEnded")}</h1>
           <p className="text-gray-500">{t("hasEnded", { name: room.name })}</p>
-          <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
-            {t("backHome")}
-          </a>
+          {isHost && (
+            <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
+              {t("backHome")}
+            </a>
+          )}
         </div>
       </main>
     );
@@ -305,6 +312,10 @@ export default function RoomPage() {
               {t("sessionExpiredPre")}
               <a href="/admin" className="font-semibold underline hover:text-white">{t("signInAgain")}</a>.
             </div>
+          )}
+          {room.flyer_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={room.flyer_url} alt={room.name} className="w-full rounded-xl border border-white/10 shadow-lg" />
           )}
           <div className="text-center">
             <h1 className="text-3xl font-extrabold mb-1 heading-gradient">{room.name}</h1>
@@ -538,9 +549,11 @@ export default function RoomPage() {
       <main className="min-h-screen flex flex-col">
         <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/10 bg-white/[0.02] backdrop-blur-md">
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            <a href="/" className="text-gray-400 hover:text-white text-sm shrink-0">
-              &larr;
-            </a>
+            {isHost && (
+              <a href="/" className="text-gray-400 hover:text-white text-sm shrink-0">
+                &larr;
+              </a>
+            )}
             <h1 className="text-sm md:text-lg font-semibold truncate">{room.name}</h1>
             {isHost && (
               <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/30">
@@ -583,6 +596,10 @@ export default function RoomPage() {
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           <div className="w-full md:flex-[3] p-4 flex items-center justify-center">
             <div className="text-center space-y-6 max-w-lg mx-auto">
+              {room.flyer_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={room.flyer_url} alt={room.name} className="w-full max-w-sm mx-auto rounded-2xl border border-white/10 shadow-2xl" />
+              )}
               {/* Conference name */}
               <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight heading-gradient">
                 {room.name}

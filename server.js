@@ -1,5 +1,7 @@
 const { createServer } = require("http");
 const { parse } = require("url");
+const fs = require("fs");
+const path = require("path");
 const next = require("next");
 const { Server } = require("socket.io");
 
@@ -98,6 +100,7 @@ async function initDb() {
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS paypal_url TEXT",
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS regional_label TEXT",
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS regional_url TEXT",
+      "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS flyer_url TEXT",
       "ALTER TABLE attendance ADD COLUMN IF NOT EXISTS email TEXT",
     ];
     for (const sql of migrations) {
@@ -158,6 +161,7 @@ async function initDb() {
       "ALTER TABLE rooms ADD COLUMN paypal_url TEXT",
       "ALTER TABLE rooms ADD COLUMN regional_label TEXT",
       "ALTER TABLE rooms ADD COLUMN regional_url TEXT",
+      "ALTER TABLE rooms ADD COLUMN flyer_url TEXT",
       "ALTER TABLE attendance ADD COLUMN email TEXT",
     ];
     for (const sql of sqliteMigrations) {
@@ -216,8 +220,37 @@ app.prepare().then(async () => {
   await initDb();
   console.log("Database initialized");
 
+  const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+  const MIME = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".gif": "image/gif",
+  };
+
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
+
+    // Serve uploaded images (flyers) straight from disk so it works reliably
+    // in production regardless of Next's static handling.
+    if (parsedUrl.pathname && parsedUrl.pathname.startsWith("/uploads/")) {
+      const filePath = path.join(process.cwd(), "public", decodeURIComponent(parsedUrl.pathname));
+      if (!filePath.startsWith(UPLOADS_DIR)) {
+        res.statusCode = 403;
+        res.end("Forbidden");
+        return;
+      }
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          res.statusCode = 404;
+          res.end("Not found");
+          return;
+        }
+        res.setHeader("Content-Type", MIME[path.extname(filePath).toLowerCase()] || "application/octet-stream");
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        res.end(data);
+      });
+      return;
+    }
+
     handle(req, res, parsedUrl);
   });
 
