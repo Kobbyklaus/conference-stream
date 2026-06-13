@@ -20,17 +20,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Room not found" }, { status: 404 });
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://conference-stream.onrender.com";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   const roomUrl = `${baseUrl}/room/${roomCode}`;
 
-  // Configure Gmail SMTP
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
+  // SMTP config — works with any provider (Hostinger, Google Workspace, etc.).
+  // Set SMTP_HOST for a custom mail server; otherwise it falls back to Gmail.
+  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+  const fromAddress = process.env.SMTP_FROM || smtpUser;
+
+  if (!smtpUser || !smtpPass) {
+    return NextResponse.json(
+      { error: "Email sending isn't configured yet. Set SMTP_USER and SMTP_PASS." },
+      { status: 503 }
+    );
+  }
+
+  const port = Number(process.env.SMTP_PORT) || 465;
+  const transporter = nodemailer.createTransport(
+    process.env.SMTP_HOST
+      ? { host: process.env.SMTP_HOST, port, secure: port === 465, auth: { user: smtpUser, pass: smtpPass } }
+      : { service: "gmail", auth: { user: smtpUser, pass: smtpPass } }
+  );
 
   const emailList: string[] = Array.isArray(emails)
     ? emails
@@ -42,7 +53,7 @@ export async function POST(req: NextRequest) {
   for (const email of emailList) {
     try {
       await transporter.sendMail({
-        from: `Conference Stream <${process.env.GMAIL_USER}>`,
+        from: `190 Nations Conference <${fromAddress}>`,
         to: email,
         subject: `You're invited to: ${room.name}`,
         html: `

@@ -47,8 +47,8 @@ export default function ParticipantPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-gray-900 rounded-xl w-full max-w-sm max-h-[70vh] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+      <div className="surface rounded-2xl w-full max-w-sm max-h-[70vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
           <h2 className="font-semibold">
             Participants ({participants.length})
           </h2>
@@ -69,15 +69,15 @@ export default function ParticipantPanel({
           {participants.map((p) => (
             <div
               key={p.socketId}
-              className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800"
+              className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.06]"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 flex items-center justify-center text-xs font-bold shrink-0">
                   {p.username.charAt(0).toUpperCase()}
                 </div>
                 <span className="text-sm truncate">{p.username}</span>
                 {p.isHost && (
-                  <span className="text-[10px] bg-indigo-600/30 text-indigo-400 px-1.5 py-0.5 rounded font-medium shrink-0">
+                  <span className="text-[10px] bg-gradient-to-r from-violet-600 to-fuchsia-600/30 text-fuchsia-300 px-1.5 py-0.5 rounded font-medium shrink-0">
                     HOST
                   </span>
                 )}

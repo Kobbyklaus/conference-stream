@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateRoomStatus } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
+    if (!requireAdmin(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { code } = await req.json();
 
     if (!code) {

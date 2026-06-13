@@ -31,7 +31,7 @@ export default function JoinRoom() {
   }
 
   return (
-    <form onSubmit={handleJoin} className="bg-gray-900 rounded-xl p-6 space-y-4">
+    <form onSubmit={handleJoin} className="surface rounded-2xl p-6 space-y-4">
       <h2 className="text-xl font-bold">Join a Conference</h2>
 
       <div>
@@ -41,7 +41,7 @@ export default function JoinRoom() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter your display name"
-          className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full input-field rounded-lg px-3 py-2 text-sm"
           required
         />
       </div>
@@ -53,7 +53,7 @@ export default function JoinRoom() {
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="Enter 6-character code"
-          className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm font-mono tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full bg-white/[0.06] text-white rounded-lg px-3 py-2 text-sm font-mono tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500"
           maxLength={6}
           required
         />
@@ -64,7 +64,7 @@ export default function JoinRoom() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium transition-colors"
+        className="w-full btn-primary py-2.5 rounded-lg font-medium transition-colors"
       >
         {loading ? "Joining..." : "Join Room"}
       </button>

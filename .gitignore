@@ -7,3 +7,6 @@ conference.db-wal
 .env
 .env.local
 .vercel
+
+.DS_Store
+*.tsbuildinfo

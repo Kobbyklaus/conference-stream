@@ -48,7 +48,7 @@ export default function InviteModal({ roomCode, hostToken, onClose }: InviteModa
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-xl w-full max-w-md p-6 space-y-4">
+      <div className="surface rounded-2xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Invite Attendees</h2>
           <button
@@ -68,7 +68,7 @@ export default function InviteModal({ roomCode, hostToken, onClose }: InviteModa
               value={emails}
               onChange={(e) => setEmails(e.target.value)}
               placeholder={"Enter emails separated by commas or new lines\ne.g. john@email.com, jane@email.com"}
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 h-28 resize-none"
+              className="w-full input-field rounded-lg px-3 py-2 text-sm h-28 resize-none"
               required
             />
           </div>
@@ -76,7 +76,7 @@ export default function InviteModal({ roomCode, hostToken, onClose }: InviteModa
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
           {result && (
-            <div className="bg-gray-800 rounded-lg p-3 text-sm">
+            <div className="bg-white/[0.06] rounded-lg p-3 text-sm">
               <p className="text-green-400">{result.sent} invitation(s) sent</p>
               {result.failed > 0 && (
                 <p className="text-red-400">{result.failed} failed to send</p>
@@ -87,7 +87,7 @@ export default function InviteModal({ roomCode, hostToken, onClose }: InviteModa
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium transition-colors"
+            className="w-full btn-primary py-2.5 rounded-lg font-medium transition-colors"
           >
             {loading ? "Sending..." : "Send Invitations"}
           </button>

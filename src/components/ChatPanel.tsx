@@ -151,9 +151,9 @@ export default function ChatPanel({
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 rounded-xl">
+    <div className="flex flex-col h-full bg-white/[0.03] backdrop-blur-md rounded-xl">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
         <h2 className="font-semibold text-lg">Live Chat</h2>
         {isHost && (
           <button
@@ -180,12 +180,12 @@ export default function ChatPanel({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-800">
+      <div className="flex border-b border-white/10">
         <button
           onClick={() => setActiveTab("chat")}
           className={`flex-1 py-2 text-sm font-medium transition-colors ${
             activeTab === "chat"
-              ? "text-indigo-400 border-b-2 border-indigo-400"
+              ? "text-fuchsia-300 border-b-2 border-fuchsia-400"
               : "text-gray-500 hover:text-gray-300"
           }`}
         >
@@ -195,13 +195,13 @@ export default function ChatPanel({
           onClick={() => setActiveTab("prayer")}
           className={`flex-1 py-2 text-sm font-medium transition-colors ${
             activeTab === "prayer"
-              ? "text-indigo-400 border-b-2 border-indigo-400"
+              ? "text-fuchsia-300 border-b-2 border-fuchsia-400"
               : "text-gray-500 hover:text-gray-300"
           }`}
         >
           Prayer Requests
           {prayerRequests.length > 0 && (
-            <span className="ml-1.5 bg-indigo-600 text-white text-xs rounded-full px-1.5 py-0.5">
+            <span className="ml-1.5 bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white text-xs rounded-full px-1.5 py-0.5">
               {prayerRequests.length}
             </span>
           )}
@@ -256,7 +256,7 @@ export default function ChatPanel({
                     className={`group rounded-lg px-3 py-2 ${
                       isHostMessage(c)
                         ? "border-l-4 border-amber-500 bg-amber-950/30"
-                        : "bg-gray-800/40"
+                        : "bg-white/[0.04]"
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -264,7 +264,7 @@ export default function ChatPanel({
                         className={`text-sm font-semibold ${
                           isHostMessage(c)
                             ? "text-amber-400"
-                            : "text-indigo-400"
+                            : "text-fuchsia-300"
                         }`}
                       >
                         {c.username}
@@ -297,19 +297,19 @@ export default function ChatPanel({
             <div ref={bottomRef} />
           </div>
 
-          <form onSubmit={handleSend} className="p-3 border-t border-gray-800">
+          <form onSubmit={handleSend} className="p-3 border-t border-white/10">
             <div className="flex gap-2">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type a message..."
-                className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="input-field flex-1 rounded-lg px-3 py-2 text-sm"
                 maxLength={500}
               />
               <button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="btn-primary px-4 py-2 rounded-lg text-sm"
               >
                 Send
               </button>
@@ -329,10 +329,10 @@ export default function ChatPanel({
           {prayerRequests.map((pr, i) => (
             <div
               key={i}
-              className="bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-3"
+              className="surface rounded-lg px-3 py-3"
             >
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-semibold text-indigo-400">
+                <span className="text-sm font-semibold text-fuchsia-300">
                   {pr.username}
                 </span>
                 {pr.country && (

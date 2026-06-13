@@ -96,7 +96,7 @@ export default function HostControls({ roomCode, hostToken }: HostControlsProps)
 
   return (
     <>
-      <div className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-t border-gray-800">
+      <div className="flex items-center gap-3 px-4 py-2 bg-[#0b0a1a]/80 backdrop-blur-md border-t border-white/10">
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           You are the host
@@ -151,7 +151,7 @@ export default function HostControls({ roomCode, hostToken }: HostControlsProps)
 
           <button
             onClick={() => setShowInvite(true)}
-            className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors border border-indigo-600/30"
+            className="bg-gradient-to-r from-violet-600 to-fuchsia-600/20 hover:bg-gradient-to-r from-violet-600 to-fuchsia-600/40 text-fuchsia-300 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors border border-indigo-600/30"
           >
             Invite
           </button>

@@ -294,7 +294,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
 
   if (!videoInfo) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-900 rounded-xl p-8">
+      <div className="flex items-center justify-center h-full surface rounded-2xl p-8">
         <p className="text-gray-400">Unsupported video URL</p>
       </div>
     );
@@ -342,6 +342,8 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
           autoPlay
           muted={!isHost}
           playsInline
+          // Attendees can't interact with the video element at all.
+          style={{ pointerEvents: isHost ? "auto" : "none" }}
         >
           <source src={videoInfo.url} />
           {subtitleUrl && (
@@ -367,14 +369,15 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
             className={`absolute bottom-3 right-3 z-20 px-2 py-1 rounded text-xs font-bold transition-colors ${
               captionsOn
                 ? "bg-white text-black"
-                : "bg-gray-800/80 text-gray-400"
+                : "bg-white/[0.06] text-gray-400"
             }`}
           >
             CC
           </button>
         )}
         {!isHost && (
-          <div className="absolute inset-0 z-10" style={{ pointerEvents: "none" }} />
+          // Second lock over the video for attendees.
+          <div className="absolute inset-0 z-20" style={{ pointerEvents: "auto" }} />
         )}
         {!isHost && isMuted && (
           <button
@@ -386,7 +389,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
               }
               setIsMuted(false);
             }}
-            className="absolute bottom-3 left-3 z-30 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
+            className="absolute bottom-3 left-3 z-30 btn-primary px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
           >
             🔇 Tap to Unmute
           </button>
@@ -398,9 +401,17 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
   // YouTube with IFrame API
   return (
     <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
-      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+      <div
+        ref={containerRef}
+        className="absolute inset-0 w-full h-full"
+        // Attendees: the player iframe ignores ALL pointer events, so a click/tap
+        // can't reach YouTube to play/pause/seek. The host keeps full control.
+        style={{ pointerEvents: isHost ? "auto" : "none" }}
+      />
       {!isHost && (
-        <div className="absolute inset-0 z-10" style={{ pointerEvents: "none" }} />
+        // Second lock: an opaque-to-events layer over the player swallows any
+        // click/tap as well. The unmute button below sits above this (z-30).
+        <div className="absolute inset-0 z-20" style={{ pointerEvents: "auto" }} />
       )}
       {!isHost && isMuted && (
         <button
@@ -409,7 +420,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
             playerRef.current?.setVolume(100);
             setIsMuted(false);
           }}
-          className="absolute bottom-4 left-4 z-30 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
+          className="absolute bottom-4 left-4 z-30 btn-primary px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
         >
           🔇 Tap to Unmute
         </button>

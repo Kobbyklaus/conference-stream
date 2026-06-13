@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import ChatPanel from "@/components/ChatPanel";
@@ -9,6 +9,7 @@ import HostControls from "@/components/HostControls";
 import ParticipantPanel from "@/components/ParticipantPanel";
 import ReactionBar from "@/components/ReactionBar";
 import ReactionOverlay from "@/components/ReactionOverlay";
+import GivingModal, { hasGiving } from "@/components/GivingModal";
 import { getSocket, disconnectSocket } from "@/lib/socket";
 
 interface Room {
@@ -19,6 +20,9 @@ interface Room {
   start_time: string | null;
   end_time: string | null;
   subtitle_url: string | null;
+  paypal_url?: string | null;
+  regional_label?: string | null;
+  regional_url?: string | null;
 }
 
 export default function RoomPage() {
@@ -26,46 +30,69 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const code = (params.code as string).toUpperCase();
   const userParam = searchParams.get("user");
-  const hostTokenParam = searchParams.get("hostToken");
+  // Lets a logged-in admin preview the exact attendee experience in the same
+  // browser (?as=guest), without signing out.
+  const previewAsGuest = searchParams.get("as") === "guest";
 
   const [room, setRoom] = useState<Room | null>(null);
   const [error, setError] = useState("");
   const [username, setUsername] = useState(userParam || "");
+  const [userEmail, setUserEmail] = useState("");
   const [userCountry, setUserCountry] = useState("");
   const [prayerRequest, setPrayerRequest] = useState("");
+  const [showGiving, setShowGiving] = useState(false);
   const [joined, setJoined] = useState(!!userParam);
   const [hostToken, setHostToken] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const joinEmittedRef = useRef(false);
   const [roomStatus, setRoomStatus] = useState<string>("live");
   const [showParticipants, setShowParticipants] = useState(false);
   const [kicked, setKicked] = useState(false);
   const [countdown, setCountdown] = useState("");
+  const [reachedZero, setReachedZero] = useState(false);
   const [countdownParts, setCountdownParts] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [waitingCount, setWaitingCount] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // Retrieve or store host token
+  // Host authority comes ONLY from being a logged-in admin. We ask a
+  // protected endpoint for the room's control token; attendees (not logged
+  // into /admin) can never obtain it, so they can never control the stream.
   useEffect(() => {
-    if (hostTokenParam) {
-      // Store token and strip from URL
-      localStorage.setItem(`host_${code}`, hostTokenParam);
-      setHostToken(hostTokenParam);
-      setIsHost(true);
-      // Clean up URL
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("hostToken");
-        window.history.replaceState({}, "", url.toString());
-      }
-    } else {
-      // Check localStorage
-      const stored = localStorage.getItem(`host_${code}`);
-      if (stored) {
-        setHostToken(stored);
-        setIsHost(true);
-      }
+    const adminToken = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    if (previewAsGuest) {
+      // Force the attendee experience for an admin testing in the same browser.
+      setUsername((prev) => prev || "Preview");
+      setJoined(true);
+      setAuthChecked(true);
+      return;
     }
-  }, [code, hostTokenParam]);
+    if (!adminToken) {
+      setAuthChecked(true);
+      return;
+    }
+    fetch(`/api/admin/rooms/${code}/token`, { headers: { "x-admin-token": adminToken } })
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.hostToken) {
+            setHostToken(data.hostToken);
+            setIsHost(true);
+            setUsername((prev) => prev || "Host");
+            setJoined(true); // admins skip the attendee registration form
+          }
+        } else {
+          // An admin token was present but the server rejected it (expired or
+          // from a previous version). Clear it and tell them to sign in again
+          // instead of silently demoting them to an attendee.
+          localStorage.removeItem("admin_token");
+          setSessionExpired(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAuthChecked(true));
+  }, [code, previewAsGuest]);
 
   // Fetch room data on mount
   useEffect(() => {
@@ -77,25 +104,27 @@ export default function RoomPage() {
       .then((data) => {
         setRoom(data);
         setRoomStatus(data.status || "live");
-
-        // If user came with ?user= param, join immediately
-        if (userParam) {
-          const socket = getSocket();
-          const storedToken = localStorage.getItem(`host_${code}`);
-          socket.emit("join-room", {
-            roomCode: code,
-            username: userParam,
-            country: "",
-            hostToken: hostTokenParam || storedToken || undefined,
-          });
-        }
       })
       .catch(() => setError("Room not found. Check the code and try again."));
 
     return () => {
       disconnectSocket();
     };
-  }, [code, userParam, hostTokenParam]);
+  }, [code]);
+
+  // Join the socket room once both the room data and the admin check are ready.
+  useEffect(() => {
+    if (!room || !authChecked || joinEmittedRef.current) return;
+    const socket = getSocket();
+    if (isHost && hostToken) {
+      joinEmittedRef.current = true;
+      socket.emit("join-room", { roomCode: code, username: username || "Host", hostToken });
+    } else if (userParam || previewAsGuest) {
+      // Attendee arrived via a direct ?user= link or admin preview (no host privileges).
+      joinEmittedRef.current = true;
+      socket.emit("join-room", { roomCode: code, username: userParam || "Preview", country: "", email: "" });
+    }
+  }, [room, authChecked, isHost, hostToken, userParam, previewAsGuest, code, username]);
 
   // Listen for room lifecycle events
   useEffect(() => {
@@ -137,10 +166,15 @@ export default function RoomPage() {
 
       if (diff <= 0) {
         setCountdown("");
-        // Auto-start if host
+        setCountdownParts({ hours: 0, minutes: 0, seconds: 0 });
+        setReachedZero(true);
+        const socket = getSocket();
         if (isHost && hostToken) {
-          const socket = getSocket();
+          // Host's browser starts the stream the moment it's due.
           socket.emit("host-start-stream", { roomCode: code, hostToken });
+        } else {
+          // Attendees nudge the server to start it (server checks it's actually due).
+          socket.emit("start-if-due", code);
         }
         return;
       }
@@ -183,11 +217,13 @@ export default function RoomPage() {
     e.preventDefault();
     if (!username.trim()) return;
     const socket = getSocket();
+    joinEmittedRef.current = true;
+    // Attendees never send a host token — only chat, reactions, giving, sharing.
     socket.emit("join-room", {
       roomCode: code,
       username: username.trim(),
+      email: userEmail.trim(),
       country: userCountry,
-      hostToken: hostToken || undefined,
     });
     if (prayerRequest.trim()) {
       socket.emit("send-prayer-request", {
@@ -207,7 +243,7 @@ export default function RoomPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-400 mb-2">Removed</h1>
           <p className="text-gray-400">You have been removed from this conference.</p>
-          <a href="/" className="text-indigo-400 hover:underline mt-4 inline-block">
+          <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
             Back to Home
           </a>
         </div>
@@ -222,7 +258,7 @@ export default function RoomPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-400 mb-2">Error</h1>
           <p className="text-gray-400">{error}</p>
-          <a href="/" className="text-indigo-400 hover:underline mt-4 inline-block">
+          <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
             Back to Home
           </a>
         </div>
@@ -230,7 +266,7 @@ export default function RoomPage() {
     );
   }
 
-  if (!room) {
+  if (!room || !authChecked) {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <p className="text-gray-400">Loading conference...</p>
@@ -245,7 +281,7 @@ export default function RoomPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-300 mb-2">Conference Ended</h1>
           <p className="text-gray-500">{room.name} has ended.</p>
-          <a href="/" className="text-indigo-400 hover:underline mt-4 inline-block">
+          <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
             Back to Home
           </a>
         </div>
@@ -257,12 +293,18 @@ export default function RoomPage() {
   if (!joined) {
     return (
       <main className="min-h-screen flex items-center justify-center p-6">
-        <form onSubmit={handleJoin} className="bg-gray-900 rounded-xl p-8 space-y-5 w-full max-w-md">
+        <form onSubmit={handleJoin} className="surface rounded-2xl p-8 space-y-5 w-full max-w-md animate-scale-in">
+          {sessionExpired && (
+            <div className="rounded-xl bg-amber-500/10 border border-amber-400/30 px-4 py-3 text-sm text-amber-100">
+              Your admin session expired. To host this conference,{" "}
+              <a href="/admin" className="font-semibold underline hover:text-white">sign in again</a>.
+            </div>
+          )}
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-1">{room.name}</h1>
-            <p className="text-gray-400 text-sm">Enter your details to join the conference</p>
+            <h1 className="text-3xl font-extrabold mb-1 heading-gradient">{room.name}</h1>
+            <p className="text-violet-200/70 text-sm">Enter your details to join the conference</p>
             {roomStatus === "scheduled" && countdown && (
-              <p className="text-indigo-400 text-sm mt-2">
+              <p className="text-fuchsia-300 text-sm mt-2 font-semibold">
                 Starts in {countdown}
               </p>
             )}
@@ -274,8 +316,19 @@ export default function RoomPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your display name"
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input-field w-full rounded-lg px-3 py-2 text-sm"
               autoFocus
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <input
+              type="email"
+              value={userEmail}
+              onChange={(e) => setUserEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="input-field w-full rounded-lg px-3 py-2 text-sm"
               required
             />
           </div>
@@ -284,7 +337,7 @@ export default function RoomPage() {
             <select
               value={userCountry}
               onChange={(e) => setUserCountry(e.target.value)}
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
+              className="input-field w-full rounded-lg px-3 py-2 text-sm appearance-none"
             >
               <option value="">Select your country</option>
               <option value="Afghanistan">Afghanistan</option>
@@ -455,14 +508,14 @@ export default function RoomPage() {
               value={prayerRequest}
               onChange={(e) => setPrayerRequest(e.target.value)}
               placeholder="Share a prayer request (optional)..."
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="input-field w-full rounded-lg px-3 py-2 text-sm resize-none"
               rows={3}
               maxLength={1000}
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg font-medium transition-colors"
+            className="btn-primary w-full py-2.5 rounded-xl"
           >
             Join Conference
           </button>
@@ -477,26 +530,66 @@ export default function RoomPage() {
 
     return (
       <main className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-800">
+        <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/10 bg-white/[0.02] backdrop-blur-md">
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <a href="/" className="text-gray-400 hover:text-white text-sm shrink-0">
               &larr;
             </a>
             <h1 className="text-sm md:text-lg font-semibold truncate">{room.name}</h1>
+            {isHost && (
+              <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/30">
+                ★ HOST
+              </span>
+            )}
           </div>
-          <ViewerCount roomCode={code} />
+          <div className="flex items-center gap-3">
+            {isHost && (
+              <a
+                href={`/room/${code}?as=guest`}
+                className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
+                title="See exactly what attendees see"
+              >
+                👁 Preview
+              </a>
+            )}
+            {hasGiving(room) && (
+              <button
+                onClick={() => setShowGiving(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-fuchsia-500/20 hover:from-amber-500/30 hover:to-fuchsia-500/30 border border-fuchsia-400/30 text-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                ❤ Give
+              </button>
+            )}
+            <ViewerCount roomCode={code} />
+          </div>
         </header>
+
+        {previewAsGuest && (
+          <div className="bg-amber-500/15 border-b border-amber-400/30 text-amber-100 text-sm px-4 py-2 text-center">
+            👁 Previewing as an attendee — this is exactly what they see.{" "}
+            <a href={`/room/${code}`} className="font-semibold underline hover:text-white">Exit preview</a>
+          </div>
+        )}
+
+        {showGiving && room && <GivingModal room={room} onClose={() => setShowGiving(false)} />}
 
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           <div className="w-full md:flex-[3] p-4 flex items-center justify-center">
             <div className="text-center space-y-6 max-w-lg mx-auto">
               {/* Conference name */}
-              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
+              <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight heading-gradient">
                 {room.name}
               </h2>
 
-              <p className="text-gray-400 text-sm uppercase tracking-widest">
-                Starting Soon
+              <p className="text-violet-200/70 text-sm uppercase tracking-[0.3em] font-semibold">
+                {reachedZero ? (
+                  <span className="inline-flex items-center gap-2 text-fuchsia-300">
+                    <span className="w-3 h-3 border-2 border-fuchsia-300 border-t-transparent rounded-full animate-spin" />
+                    Starting now…
+                  </span>
+                ) : (
+                  "Starting Soon"
+                )}
               </p>
 
               {/* Flip-clock countdown */}
@@ -504,8 +597,8 @@ export default function RoomPage() {
                 <div className="flex items-center justify-center gap-3 md:gap-4">
                   {/* Hours */}
                   <div className="flex flex-col items-center">
-                    <div className="bg-gray-800/80 border border-gray-700 rounded-xl px-4 py-3 md:px-6 md:py-4 min-w-[72px] md:min-w-[90px] shadow-lg shadow-amber-900/10">
-                      <span className="text-4xl md:text-5xl font-mono font-bold bg-gradient-to-b from-amber-300 to-amber-500 bg-clip-text text-transparent">
+                    <div className="surface rounded-2xl px-4 py-3 md:px-6 md:py-4 min-w-[72px] md:min-w-[90px]">
+                      <span className="text-4xl md:text-5xl font-mono font-bold bg-gradient-to-b from-violet-200 via-fuchsia-300 to-amber-300 bg-clip-text text-transparent">
                         {pad(countdownParts.hours)}
                       </span>
                     </div>
@@ -518,8 +611,8 @@ export default function RoomPage() {
 
                   {/* Minutes */}
                   <div className="flex flex-col items-center">
-                    <div className="bg-gray-800/80 border border-gray-700 rounded-xl px-4 py-3 md:px-6 md:py-4 min-w-[72px] md:min-w-[90px] shadow-lg shadow-amber-900/10">
-                      <span className="text-4xl md:text-5xl font-mono font-bold bg-gradient-to-b from-amber-300 to-amber-500 bg-clip-text text-transparent">
+                    <div className="surface rounded-2xl px-4 py-3 md:px-6 md:py-4 min-w-[72px] md:min-w-[90px]">
+                      <span className="text-4xl md:text-5xl font-mono font-bold bg-gradient-to-b from-violet-200 via-fuchsia-300 to-amber-300 bg-clip-text text-transparent">
                         {pad(countdownParts.minutes)}
                       </span>
                     </div>
@@ -532,8 +625,8 @@ export default function RoomPage() {
 
                   {/* Seconds */}
                   <div className="flex flex-col items-center">
-                    <div className="bg-gray-800/80 border border-gray-700 rounded-xl px-4 py-3 md:px-6 md:py-4 min-w-[72px] md:min-w-[90px] shadow-lg shadow-amber-900/10">
-                      <span className="text-4xl md:text-5xl font-mono font-bold bg-gradient-to-b from-amber-300 to-amber-500 bg-clip-text text-transparent">
+                    <div className="surface rounded-2xl px-4 py-3 md:px-6 md:py-4 min-w-[72px] md:min-w-[90px]">
+                      <span className="text-4xl md:text-5xl font-mono font-bold bg-gradient-to-b from-violet-200 via-fuchsia-300 to-amber-300 bg-clip-text text-transparent">
                         {pad(countdownParts.seconds)}
                       </span>
                     </div>
@@ -565,10 +658,10 @@ export default function RoomPage() {
               )}
 
               {/* Share section */}
-              <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 space-y-3">
-                <p className="text-sm text-gray-400">Share this conference</p>
+              <div className="surface rounded-2xl p-4 space-y-3">
+                <p className="text-sm text-violet-200/70">Share this conference</p>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 font-mono truncate">
+                  <div className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 font-mono truncate">
                     {typeof window !== "undefined"
                       ? `${window.location.origin}/room/${code}`
                       : `/room/${code}`}
@@ -599,7 +692,7 @@ export default function RoomPage() {
           </div>
 
           {/* Chat available during waiting */}
-          <div className="flex-1 md:flex-initial md:w-[320px] lg:w-[350px] border-t md:border-t-0 md:border-l border-gray-800 min-h-0">
+          <div className="flex-1 md:flex-initial md:w-[320px] lg:w-[350px] border-t md:border-t-0 md:border-l border-white/10 min-h-0">
             <ChatPanel roomCode={code} username={username || "Anonymous"} isHost={isHost} />
           </div>
         </div>
@@ -611,21 +704,44 @@ export default function RoomPage() {
   return (
     <main className="h-screen flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-800">
+      <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/10">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           <a href="/" className="text-gray-400 hover:text-white text-sm shrink-0">
             &larr;
           </a>
           <h1 className="text-sm md:text-lg font-semibold truncate">{room.name}</h1>
-          <span className="text-xs text-gray-500 font-mono bg-gray-800 px-2 py-0.5 rounded shrink-0 hidden sm:inline">
+          <span className="text-xs text-violet-200/80 font-mono bg-white/10 border border-white/10 px-2 py-0.5 rounded shrink-0 hidden sm:inline">
             {room.code}
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleCopyLink}
+            className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {linkCopied ? "Copied!" : "Share"}
+          </button>
+          {hasGiving(room) && (
+            <button
+              onClick={() => setShowGiving(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-fuchsia-500/20 hover:from-amber-500/30 hover:to-fuchsia-500/30 border border-fuchsia-400/30 text-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              ❤ Give
+            </button>
+          )}
+          {isHost && (
+            <a
+              href={`/room/${code}?as=guest`}
+              className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
+              title="See exactly what attendees see"
+            >
+              👁 Preview
+            </a>
+          )}
           {isHost && (
             <button
               onClick={() => setShowParticipants(true)}
-              className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
             >
               Participants
             </button>
@@ -633,6 +749,15 @@ export default function RoomPage() {
           <ViewerCount roomCode={code} />
         </div>
       </header>
+
+      {previewAsGuest && (
+        <div className="bg-amber-500/15 border-b border-amber-400/30 text-amber-100 text-sm px-4 py-2 text-center">
+          👁 Previewing as an attendee — this is exactly what they see.{" "}
+          <a href={`/room/${code}`} className="font-semibold underline hover:text-white">Exit preview</a>
+        </div>
+      )}
+
+      {showGiving && room && <GivingModal room={room} onClose={() => setShowGiving(false)} />}
 
       {/* Content - stacks vertically on mobile, side by side on desktop */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -657,7 +782,7 @@ export default function RoomPage() {
         </div>
 
         {/* Chat - below video on mobile, sidebar on desktop */}
-        <div className="flex-1 md:flex-initial md:w-[320px] lg:w-[350px] border-t md:border-t-0 md:border-l border-gray-800 min-h-0">
+        <div className="flex-1 md:flex-initial md:w-[320px] lg:w-[350px] border-t md:border-t-0 md:border-l border-white/10 min-h-0">
           <ChatPanel roomCode={code} username={username || "Anonymous"} isHost={isHost} />
         </div>
       </div>

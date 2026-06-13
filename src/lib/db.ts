@@ -49,7 +49,25 @@ function getSqliteDb() {
         joined_at TEXT DEFAULT (datetime('now')),
         UNIQUE(room_code, username)
       );
+
+      CREATE TABLE IF NOT EXISTS admins (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
     `);
+
+    // Migrations for existing DBs (SQLite has no ADD COLUMN IF NOT EXISTS)
+    const sqliteMigrations = [
+      "ALTER TABLE rooms ADD COLUMN paypal_url TEXT",
+      "ALTER TABLE rooms ADD COLUMN regional_label TEXT",
+      "ALTER TABLE rooms ADD COLUMN regional_url TEXT",
+      "ALTER TABLE attendance ADD COLUMN email TEXT",
+    ];
+    for (const sql of sqliteMigrations) {
+      try { (sqliteDb as any).exec(sql); } catch { /* column already exists */ }
+    }
   }
   return sqliteDb;
 }
@@ -105,11 +123,21 @@ export async function initDb() {
         joined_at TIMESTAMPTZ DEFAULT NOW(),
         UNIQUE(room_code, username)
       );
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
     const migrations = [
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS subtitle_url TEXT",
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS peak_viewers INTEGER DEFAULT 0",
       "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS total_joins INTEGER DEFAULT 0",
+      "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS paypal_url TEXT",
+      "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS regional_label TEXT",
+      "ALTER TABLE rooms ADD COLUMN IF NOT EXISTS regional_url TEXT",
+      "ALTER TABLE attendance ADD COLUMN IF NOT EXISTS email TEXT",
     ];
     for (const sql of migrations) {
       try { await pool.query(sql); } catch { /* ignore */ }
@@ -127,22 +155,27 @@ export async function createRoom(
   status: string = "live",
   startTime?: string,
   endTime?: string,
-  subtitleUrl?: string
+  subtitleUrl?: string,
+  paypalUrl?: string,
+  regionalLabel?: string,
+  regionalUrl?: string
 ) {
   if (isProduction) {
     const result = await getPgPool().query(
-      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [code, name, videoUrl, hostToken, status, startTime || null, endTime || null, subtitleUrl || null]
+      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url, paypal_url, regional_label, regional_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [code, name, videoUrl, hostToken, status, startTime || null, endTime || null, subtitleUrl || null,
+       paypalUrl || null, regionalLabel || null, regionalUrl || null]
     );
     return result.rows[0];
   } else {
     const db = getSqliteDb();
     const stmt = db.prepare(
-      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO rooms (code, name, video_url, host_token, status, start_time, end_time, subtitle_url, paypal_url, regional_label, regional_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
-    stmt.run(code, name, videoUrl, hostToken, status, startTime || null, endTime || null, subtitleUrl || null);
+    stmt.run(code, name, videoUrl, hostToken, status, startTime || null, endTime || null, subtitleUrl || null,
+      paypalUrl || null, regionalLabel || null, regionalUrl || null);
     return db.prepare("SELECT * FROM rooms WHERE code = ?").get(code);
   }
 }
@@ -221,19 +254,69 @@ export async function getAllRoomsWithStats() {
 export async function getAttendanceByRoom(roomCode: string) {
   if (isProduction) {
     const result = await getPgPool().query(
-      "SELECT username, country, joined_at as \"joinedAt\" FROM attendance WHERE room_code = $1 ORDER BY joined_at ASC",
+      "SELECT username, email, country, joined_at as \"joinedAt\" FROM attendance WHERE room_code = $1 ORDER BY joined_at ASC",
       [roomCode]
     );
     return result.rows as AttendanceRow[];
   } else {
     return getSqliteDb().prepare(
-      "SELECT username, country, joined_at as \"joinedAt\" FROM attendance WHERE room_code = ? ORDER BY joined_at ASC"
+      "SELECT username, email, country, joined_at as \"joinedAt\" FROM attendance WHERE room_code = ? ORDER BY joined_at ASC"
     ).all(roomCode) as AttendanceRow[];
+  }
+}
+
+/* ---------- Admin accounts (multi-admin) ---------- */
+
+export interface AdminRow {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+export async function listAdmins(): Promise<AdminRow[]> {
+  if (isProduction) {
+    const result = await getPgPool().query("SELECT id, name, created_at FROM admins ORDER BY created_at ASC");
+    return result.rows as AdminRow[];
+  } else {
+    return getSqliteDb().prepare("SELECT id, name, created_at FROM admins ORDER BY created_at ASC").all() as AdminRow[];
+  }
+}
+
+export async function createAdmin(name: string, passwordHash: string) {
+  if (isProduction) {
+    const result = await getPgPool().query(
+      "INSERT INTO admins (name, password_hash) VALUES ($1, $2) RETURNING id, name, created_at",
+      [name, passwordHash]
+    );
+    return result.rows[0] as AdminRow;
+  } else {
+    const db = getSqliteDb();
+    const info = db.prepare("INSERT INTO admins (name, password_hash) VALUES (?, ?)").run(name, passwordHash);
+    return db.prepare("SELECT id, name, created_at FROM admins WHERE id = ?").get(info.lastInsertRowid) as AdminRow;
+  }
+}
+
+export async function deleteAdmin(id: number) {
+  if (isProduction) {
+    await getPgPool().query("DELETE FROM admins WHERE id = $1", [id]);
+  } else {
+    getSqliteDb().prepare("DELETE FROM admins WHERE id = ?").run(id);
+  }
+}
+
+/** Returns every stored password hash (for verifying a submitted password). */
+export async function getAdminHashes(): Promise<{ name: string; password_hash: string }[]> {
+  if (isProduction) {
+    const result = await getPgPool().query("SELECT name, password_hash FROM admins");
+    return result.rows as { name: string; password_hash: string }[];
+  } else {
+    return getSqliteDb().prepare("SELECT name, password_hash FROM admins").all() as { name: string; password_hash: string }[];
   }
 }
 
 interface AttendanceRow {
   username: string;
+  email: string;
   country: string;
   joinedAt: string;
 }

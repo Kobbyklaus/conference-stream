@@ -1,24 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { nanoid } from "nanoid";
-
-// In-memory admin sessions (resets on server restart)
-const adminSessions = new Set<string>();
-
-export function isValidAdminToken(token: string): boolean {
-  return adminSessions.has(token);
-}
+import { issueToken, verifyPassword } from "@/lib/auth";
+import { getAdminHashes } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json();
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  if (!password) {
+    return NextResponse.json({ error: "Password is required" }, { status: 400 });
+  }
 
-  if (password !== adminPassword) {
+  // 1) Bootstrap super-admin password from the environment.
+  const envPassword = process.env.ADMIN_PASSWORD || "admin123";
+  let ok = password === envPassword;
+  let who = ok ? "Owner" : "";
+
+  // 2) Any admin account created via the dashboard.
+  if (!ok) {
+    const admins = await getAdminHashes();
+    const match = admins.find((a) => verifyPassword(password, a.password_hash));
+    if (match) {
+      ok = true;
+      who = match.name;
+    }
+  }
+
+  if (!ok) {
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
-  const token = nanoid(32);
-  adminSessions.add(token);
-
-  return NextResponse.json({ token });
+  const token = issueToken(who);
+  return NextResponse.json({ token, name: who });
 }

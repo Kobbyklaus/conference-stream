@@ -22,7 +22,7 @@ export default function ViewerCount({ roomCode }: { roomCode: string }) {
   }, [roomCode]);
 
   return (
-    <div className="flex items-center gap-2 bg-gray-800 px-3 py-1.5 rounded-full text-sm">
+    <div className="flex items-center gap-2 bg-white/[0.06] px-3 py-1.5 rounded-full text-sm">
       <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
       <span className="font-medium">{count}</span>
       <span className="text-gray-400">watching</span>

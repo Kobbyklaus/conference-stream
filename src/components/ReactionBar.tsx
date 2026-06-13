@@ -16,7 +16,7 @@ export default function ReactionBar({ roomCode }: { roomCode: string }) {
         <button
           key={emoji}
           onClick={() => sendReaction(emoji)}
-          className="text-xl hover:scale-125 active:scale-95 transition-transform bg-gray-800 hover:bg-gray-700 rounded-full w-10 h-10 flex items-center justify-center"
+          className="text-xl hover:scale-125 active:scale-95 transition-transform bg-white/[0.06] hover:bg-white/[0.12] rounded-full w-10 h-10 flex items-center justify-center"
         >
           {emoji}
         </button>
