@@ -17,6 +17,10 @@ module.exports = {
       exec_mode: "fork",
       max_memory_restart: "500M",
       time: true,
+      // Run this app on a specific Node (e.g. an nvm-installed Node 22) without
+      // affecting other pm2 apps. Set NODE_INTERPRETER when starting; if unset,
+      // pm2 uses its default Node.
+      interpreter: process.env.NODE_INTERPRETER || undefined,
       env: {
         NODE_ENV: "production",
         PORT: 3000,
