@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getSocket } from "@/lib/socket";
+import { useT } from "@/lib/i18n";
 
 interface Comment {
   username: string;
@@ -30,6 +31,7 @@ export default function ChatPanel({
   username,
   isHost = false,
 }: ChatPanelProps) {
+  const { t } = useT();
   const [comments, setComments] = useState<Comment[]>([]);
   const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
   const [message, setMessage] = useState("");
@@ -154,7 +156,7 @@ export default function ChatPanel({
     <div className="flex flex-col h-full bg-white/[0.03] backdrop-blur-md rounded-xl">
       {/* Header */}
       <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-        <h2 className="font-semibold text-lg">Live Chat</h2>
+        <h2 className="font-semibold text-lg">{t("liveChat")}</h2>
         {isHost && (
           <button
             onClick={exportChatLog}
@@ -189,7 +191,7 @@ export default function ChatPanel({
               : "text-gray-500 hover:text-gray-300"
           }`}
         >
-          Chat
+          {t("chat")}
         </button>
         <button
           onClick={() => setActiveTab("prayer")}
@@ -199,7 +201,7 @@ export default function ChatPanel({
               : "text-gray-500 hover:text-gray-300"
           }`}
         >
-          Prayer Requests
+          {t("prayerRequests")}
           {prayerRequests.length > 0 && (
             <span className="ml-1.5 bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white text-xs rounded-full px-1.5 py-0.5">
               {prayerRequests.length}
@@ -238,7 +240,7 @@ export default function ChatPanel({
 
             {comments.length === 0 && (
               <p className="text-gray-500 text-sm text-center mt-8">
-                No messages yet. Be the first to comment!
+                {t("noMessages")}
               </p>
             )}
 
@@ -303,7 +305,7 @@ export default function ChatPanel({
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type a message..."
+                placeholder={t("typeMessage")}
                 className="input-field flex-1 rounded-lg px-3 py-2 text-sm"
                 maxLength={500}
               />
@@ -311,7 +313,7 @@ export default function ChatPanel({
                 type="submit"
                 className="btn-primary px-4 py-2 rounded-lg text-sm"
               >
-                Send
+                {t("send")}
               </button>
             </div>
           </form>
@@ -323,7 +325,7 @@ export default function ChatPanel({
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {prayerRequests.length === 0 && (
             <p className="text-gray-500 text-sm text-center mt-8">
-              No prayer requests yet.
+              {t("noPrayers")}
             </p>
           )}
           {prayerRequests.map((pr, i) => (

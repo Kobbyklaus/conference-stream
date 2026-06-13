@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import { useT } from "@/lib/i18n";
 
 declare global {
   interface Window {
@@ -80,6 +81,7 @@ function loadYouTubeAPI(): Promise<void> {
 }
 
 export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitleUrl }: VideoPlayerProps) {
+  const { t } = useT();
   const videoInfo = parseVideoInfo(url);
   const playerRef = useRef<YT.Player | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -391,7 +393,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
             }}
             className="absolute bottom-3 left-3 z-30 btn-primary px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
           >
-            🔇 Tap to Unmute
+            🔇 {t("tapToUnmute")}
           </button>
         )}
       </div>
@@ -422,7 +424,7 @@ export default function VideoPlayer({ url, isHost, roomCode, hostToken, subtitle
           }}
           className="absolute bottom-4 left-4 z-30 btn-primary px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-lg animate-pulse"
         >
-          🔇 Tap to Unmute
+          🔇 {t("tapToUnmute")}
         </button>
       )}
     </div>

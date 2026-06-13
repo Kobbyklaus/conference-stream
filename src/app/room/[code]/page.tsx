@@ -10,6 +10,8 @@ import ParticipantPanel from "@/components/ParticipantPanel";
 import ReactionBar from "@/components/ReactionBar";
 import ReactionOverlay from "@/components/ReactionOverlay";
 import GivingModal, { hasGiving } from "@/components/GivingModal";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useT } from "@/lib/i18n";
 import { getSocket, disconnectSocket } from "@/lib/socket";
 
 interface Room {
@@ -26,6 +28,7 @@ interface Room {
 }
 
 export default function RoomPage() {
+  const { t } = useT();
   const params = useParams();
   const searchParams = useSearchParams();
   const code = (params.code as string).toUpperCase();
@@ -241,10 +244,10 @@ export default function RoomPage() {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Removed</h1>
-          <p className="text-gray-400">You have been removed from this conference.</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-2">{t("removed")}</h1>
+          <p className="text-gray-400">{t("removedMsg")}</p>
           <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
-            Back to Home
+            {t("backHome")}
           </a>
         </div>
       </main>
@@ -256,10 +259,10 @@ export default function RoomPage() {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Error</h1>
-          <p className="text-gray-400">{error}</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-2">{t("error")}</h1>
+          <p className="text-gray-400">{t("roomNotFound")}</p>
           <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
-            Back to Home
+            {t("backHome")}
           </a>
         </div>
       </main>
@@ -269,7 +272,7 @@ export default function RoomPage() {
   if (!room || !authChecked) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">Loading conference...</p>
+        <p className="text-gray-400">{t("loading")}</p>
       </main>
     );
   }
@@ -279,10 +282,10 @@ export default function RoomPage() {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-300 mb-2">Conference Ended</h1>
-          <p className="text-gray-500">{room.name} has ended.</p>
+          <h1 className="text-2xl font-bold text-gray-300 mb-2">{t("conferenceEnded")}</h1>
+          <p className="text-gray-500">{t("hasEnded", { name: room.name })}</p>
           <a href="/" className="text-fuchsia-300 hover:underline mt-4 inline-block">
-            Back to Home
+            {t("backHome")}
           </a>
         </div>
       </main>
@@ -294,35 +297,38 @@ export default function RoomPage() {
     return (
       <main className="min-h-screen flex items-center justify-center p-6">
         <form onSubmit={handleJoin} className="surface rounded-2xl p-8 space-y-5 w-full max-w-md animate-scale-in">
+          <div className="flex justify-end">
+            <LanguageSwitcher />
+          </div>
           {sessionExpired && (
             <div className="rounded-xl bg-amber-500/10 border border-amber-400/30 px-4 py-3 text-sm text-amber-100">
-              Your admin session expired. To host this conference,{" "}
-              <a href="/admin" className="font-semibold underline hover:text-white">sign in again</a>.
+              {t("sessionExpiredPre")}
+              <a href="/admin" className="font-semibold underline hover:text-white">{t("signInAgain")}</a>.
             </div>
           )}
           <div className="text-center">
             <h1 className="text-3xl font-extrabold mb-1 heading-gradient">{room.name}</h1>
-            <p className="text-violet-200/70 text-sm">Enter your details to join the conference</p>
+            <p className="text-violet-200/70 text-sm">{t("joinSubtitle")}</p>
             {roomStatus === "scheduled" && countdown && (
               <p className="text-fuchsia-300 text-sm mt-2 font-semibold">
-                Starts in {countdown}
+                {t("startsIn", { time: countdown })}
               </p>
             )}
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Your Name</label>
+            <label className="block text-sm text-gray-400 mb-1">{t("yourName")}</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your display name"
+              placeholder={t("namePlaceholder")}
               className="input-field w-full rounded-lg px-3 py-2 text-sm"
               autoFocus
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label className="block text-sm text-gray-400 mb-1">{t("email")}</label>
             <input
               type="email"
               value={userEmail}
@@ -333,13 +339,13 @@ export default function RoomPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Country</label>
+            <label className="block text-sm text-gray-400 mb-1">{t("country")}</label>
             <select
               value={userCountry}
               onChange={(e) => setUserCountry(e.target.value)}
               className="input-field w-full rounded-lg px-3 py-2 text-sm appearance-none"
             >
-              <option value="">Select your country</option>
+              <option value="">{t("selectCountry")}</option>
               <option value="Afghanistan">Afghanistan</option>
               <option value="Albania">Albania</option>
               <option value="Algeria">Algeria</option>
@@ -503,11 +509,11 @@ export default function RoomPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Prayer Request <span className="text-gray-600">(optional)</span></label>
+            <label className="block text-sm text-gray-400 mb-1">{t("prayerRequest")} <span className="text-gray-600">{t("optional")}</span></label>
             <textarea
               value={prayerRequest}
               onChange={(e) => setPrayerRequest(e.target.value)}
-              placeholder="Share a prayer request (optional)..."
+              placeholder={t("prayerPlaceholder")}
               className="input-field w-full rounded-lg px-3 py-2 text-sm resize-none"
               rows={3}
               maxLength={1000}
@@ -517,7 +523,7 @@ export default function RoomPage() {
             type="submit"
             className="btn-primary w-full py-2.5 rounded-xl"
           >
-            Join Conference
+            {t("joinConference")}
           </button>
         </form>
       </main>
@@ -543,13 +549,14 @@ export default function RoomPage() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             {isHost && (
               <a
                 href={`/room/${code}?as=guest`}
                 className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
                 title="See exactly what attendees see"
               >
-                👁 Preview
+                👁 {t("preview")}
               </a>
             )}
             {hasGiving(room) && (
@@ -557,7 +564,7 @@ export default function RoomPage() {
                 onClick={() => setShowGiving(true)}
                 className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-fuchsia-500/20 hover:from-amber-500/30 hover:to-fuchsia-500/30 border border-fuchsia-400/30 text-amber-100 px-3 py-1.5 rounded-lg transition-colors"
               >
-                ❤ Give
+                ❤ {t("give")}
               </button>
             )}
             <ViewerCount roomCode={code} />
@@ -566,8 +573,8 @@ export default function RoomPage() {
 
         {previewAsGuest && (
           <div className="bg-amber-500/15 border-b border-amber-400/30 text-amber-100 text-sm px-4 py-2 text-center">
-            👁 Previewing as an attendee — this is exactly what they see.{" "}
-            <a href={`/room/${code}`} className="font-semibold underline hover:text-white">Exit preview</a>
+            👁 {t("previewingBanner")}{" "}
+            <a href={`/room/${code}`} className="font-semibold underline hover:text-white">{t("exitPreview")}</a>
           </div>
         )}
 
@@ -585,10 +592,10 @@ export default function RoomPage() {
                 {reachedZero ? (
                   <span className="inline-flex items-center gap-2 text-fuchsia-300">
                     <span className="w-3 h-3 border-2 border-fuchsia-300 border-t-transparent rounded-full animate-spin" />
-                    Starting now…
+                    {t("startingNow")}
                   </span>
                 ) : (
-                  "Starting Soon"
+                  t("startingSoon")
                 )}
               </p>
 
@@ -603,7 +610,7 @@ export default function RoomPage() {
                       </span>
                     </div>
                     <span className="text-[10px] md:text-xs text-gray-500 mt-1.5 uppercase tracking-wider">
-                      Hours
+                      {t("hours")}
                     </span>
                   </div>
 
@@ -617,7 +624,7 @@ export default function RoomPage() {
                       </span>
                     </div>
                     <span className="text-[10px] md:text-xs text-gray-500 mt-1.5 uppercase tracking-wider">
-                      Minutes
+                      {t("minutes")}
                     </span>
                   </div>
 
@@ -631,7 +638,7 @@ export default function RoomPage() {
                       </span>
                     </div>
                     <span className="text-[10px] md:text-xs text-gray-500 mt-1.5 uppercase tracking-wider">
-                      Seconds
+                      {t("seconds")}
                     </span>
                   </div>
                 </div>
@@ -639,7 +646,7 @@ export default function RoomPage() {
 
               {room.start_time && (
                 <p className="text-gray-400 text-sm">
-                  Scheduled for{" "}
+                  {t("scheduledFor")}{" "}
                   <span className="text-gray-300 font-medium">
                     {new Date(room.start_time).toLocaleString()}
                   </span>
@@ -651,15 +658,14 @@ export default function RoomPage() {
                 <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                   <span className="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
                   <span>
-                    <span className="text-amber-400 font-semibold">{waitingCount}</span>{" "}
-                    {waitingCount === 1 ? "person" : "people"} waiting
+                    {t(waitingCount === 1 ? "waitingOne" : "waitingMany", { n: waitingCount })}
                   </span>
                 </div>
               )}
 
               {/* Share section */}
               <div className="surface rounded-2xl p-4 space-y-3">
-                <p className="text-sm text-violet-200/70">Share this conference</p>
+                <p className="text-sm text-violet-200/70">{t("shareConference")}</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 font-mono truncate">
                     {typeof window !== "undefined"
@@ -674,7 +680,7 @@ export default function RoomPage() {
                         : "bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 border border-amber-600/30"
                     }`}
                   >
-                    {linkCopied ? "Copied!" : "Copy Link"}
+                    {linkCopied ? t("copied") : t("copyLink")}
                   </button>
                 </div>
               </div>
@@ -685,7 +691,7 @@ export default function RoomPage() {
                   onClick={handleStartNow}
                   className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-medium transition-colors text-lg shadow-lg shadow-green-900/30"
                 >
-                  Start Now
+                  {t("startNow")}
                 </button>
               )}
             </div>
@@ -715,18 +721,19 @@ export default function RoomPage() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <LanguageSwitcher />
           <button
             onClick={handleCopyLink}
             className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
           >
-            {linkCopied ? "Copied!" : "Share"}
+            {linkCopied ? t("copied") : t("share")}
           </button>
           {hasGiving(room) && (
             <button
               onClick={() => setShowGiving(true)}
               className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-fuchsia-500/20 hover:from-amber-500/30 hover:to-fuchsia-500/30 border border-fuchsia-400/30 text-amber-100 px-3 py-1.5 rounded-lg transition-colors"
             >
-              ❤ Give
+              ❤ {t("give")}
             </button>
           )}
           {isHost && (
@@ -735,7 +742,7 @@ export default function RoomPage() {
               className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
               title="See exactly what attendees see"
             >
-              👁 Preview
+              👁 {t("preview")}
             </a>
           )}
           {isHost && (
@@ -743,7 +750,7 @@ export default function RoomPage() {
               onClick={() => setShowParticipants(true)}
               className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-violet-100 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Participants
+              {t("participants")}
             </button>
           )}
           <ViewerCount roomCode={code} />
@@ -752,8 +759,8 @@ export default function RoomPage() {
 
       {previewAsGuest && (
         <div className="bg-amber-500/15 border-b border-amber-400/30 text-amber-100 text-sm px-4 py-2 text-center">
-          👁 Previewing as an attendee — this is exactly what they see.{" "}
-          <a href={`/room/${code}`} className="font-semibold underline hover:text-white">Exit preview</a>
+          👁 {t("previewingBanner")}{" "}
+          <a href={`/room/${code}`} className="font-semibold underline hover:text-white">{t("exitPreview")}</a>
         </div>
       )}
 

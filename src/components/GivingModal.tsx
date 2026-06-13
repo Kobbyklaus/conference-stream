@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 interface GivingRoom {
   name: string;
   paypal_url?: string | null;
@@ -12,12 +14,13 @@ export function hasGiving(room: GivingRoom | null | undefined): boolean {
 }
 
 export default function GivingModal({ room, onClose }: { room: GivingRoom; onClose: () => void }) {
+  const { t } = useT();
   const options: { label: string; url: string; sub: string }[] = [];
   if (room.paypal_url) {
-    options.push({ label: "Give with PayPal", url: room.paypal_url, sub: "Card or PayPal balance" });
+    options.push({ label: t("giveWithPaypal"), url: room.paypal_url, sub: t("cardOrPaypal") });
   }
   if (room.regional_url) {
-    options.push({ label: room.regional_label || "Local Giving", url: room.regional_url, sub: "Regional payment method" });
+    options.push({ label: room.regional_label || t("give"), url: room.regional_url, sub: t("regionalMethod") });
   }
 
   return (
@@ -32,8 +35,8 @@ export default function GivingModal({ room, onClose }: { room: GivingRoom; onClo
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
             </svg>
           </div>
-          <h2 className="text-xl font-extrabold heading-gradient">Give an Offering</h2>
-          <p className="text-violet-200/70 text-sm mt-1">Support {room.name}</p>
+          <h2 className="text-xl font-extrabold heading-gradient">{t("giveOffering")}</h2>
+          <p className="text-violet-200/70 text-sm mt-1">{t("support", { name: room.name })}</p>
         </div>
 
         <div className="space-y-3">
@@ -55,7 +58,7 @@ export default function GivingModal({ room, onClose }: { room: GivingRoom; onClo
           onClick={onClose}
           className="w-full mt-4 text-sm text-gray-400 hover:text-white transition-colors"
         >
-          Close
+          {t("close")}
         </button>
       </div>
     </div>
