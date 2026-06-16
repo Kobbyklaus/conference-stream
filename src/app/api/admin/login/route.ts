@@ -10,8 +10,10 @@ export async function POST(req: NextRequest) {
   }
 
   // 1) Bootstrap super-admin password from the environment.
-  const envPassword = process.env.ADMIN_PASSWORD || "admin123";
-  let ok = password === envPassword;
+  // No insecure default: if ADMIN_PASSWORD is unset, the env bootstrap is
+  // simply disabled (dashboard-created admins can still log in).
+  const envPassword = process.env.ADMIN_PASSWORD;
+  let ok = !!envPassword && password === envPassword;
   let who = ok ? "Owner" : "";
 
   // 2) Any admin account created via the dashboard.

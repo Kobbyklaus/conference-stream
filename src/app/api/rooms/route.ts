@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRoom, getRoomByCode } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { nanoid } from "nanoid";
 
 export async function POST(req: NextRequest) {
+  if (!requireAdmin(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { name, videoUrl, startTime, endTime, subtitleUrl, paypalUrl, regionalLabel, regionalUrl, flyerUrl } = await req.json();
 
   if (!name || !videoUrl) {

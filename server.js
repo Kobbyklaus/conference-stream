@@ -254,9 +254,22 @@ app.prepare().then(async () => {
     handle(req, res, parsedUrl);
   });
 
+  // Restrict which origins may open a socket. Same-origin viewers (the actual
+  // watch.dhmm190.com site) are unaffected; this blocks other websites from
+  // connecting to flood chat, inflate viewer counts, or brute-force room codes.
+  // Override with ALLOWED_ORIGINS (comma-separated) in the environment.
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://watch.dhmm190.com")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   const io = new Server(server, {
     path: "/api/socketio",
     addTrailingSlash: false,
+    cors: {
+      origin: allowedOrigins,
+      methods: ["GET", "POST"],
+    },
   });
 
   // Take a scheduled room live. Anchors playback at t=0 the moment it starts,
@@ -502,13 +515,32 @@ app.prepare().then(async () => {
       }
     });
 
-    socket.on("send-comment", async ({ roomCode, username, message }) => {
+    socket.on("send-comment", async ({ message }) => {
+      // Must have joined a room first; use the server-tracked room and
+      // username so a client can't post to arbitrary rooms or impersonate
+      // another name per-message.
+      if (!currentRoom || !currentUser) return;
+
+      // Validate the message: must be a non-empty string, capped at 500 chars.
+      if (typeof message !== "string") return;
+      const text = message.trim();
+      if (!text || text.length > 500) return;
+
+      // Rate-limit: max 8 messages per 10 seconds per socket (anti-flood).
+      const now = Date.now();
+      if (!socket.data.commentTimes) socket.data.commentTimes = [];
+      socket.data.commentTimes = socket.data.commentTimes.filter((t) => now - t < 10000);
+      if (socket.data.commentTimes.length >= 8) return;
+      socket.data.commentTimes.push(now);
+
+      const roomCode = currentRoom;
+      const username = currentUser;
       const timestamp = new Date().toISOString();
 
       try {
         await pool.query(
           "INSERT INTO comments (room_code, username, message) VALUES ($1, $2, $3)",
-          [roomCode, username, message]
+          [roomCode, username, text]
         );
       } catch (err) {
         console.error("Failed to persist comment:", err);
@@ -516,7 +548,7 @@ app.prepare().then(async () => {
 
       io.to(roomCode).emit("new-comment", {
         username,
-        message,
+        message: text,
         created_at: timestamp,
       });
     });

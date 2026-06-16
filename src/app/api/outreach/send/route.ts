@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { requireAdmin } from "@/lib/auth";
 
 interface SendRequest {
   gmailUser: string;
@@ -16,6 +17,10 @@ interface SendRequest {
 }
 
 export async function POST(req: NextRequest) {
+  if (!requireAdmin(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body: SendRequest = await req.json();
     const { gmailUser, gmailAppPassword, senderName, recipients, batchSize, delayMs } = body;

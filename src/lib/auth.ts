@@ -25,11 +25,17 @@ export function verifyPassword(password: string, stored: string): boolean {
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 function sessionSecret(): string {
-  return (
-    process.env.ADMIN_SESSION_SECRET ||
-    process.env.ADMIN_PASSWORD ||
-    "dev-insecure-secret-change-me"
-  );
+  // Require a dedicated, random secret. No fallback to the admin password
+  // (rotating the password would invalidate sessions, and a leaked password
+  // would let tokens be forged) and no hardcoded dev default (publicly known
+  // = forgeable). Generate one with: openssl rand -hex 32
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "ADMIN_SESSION_SECRET is not set (or too short). Set a random 32+ byte secret in the environment."
+    );
+  }
+  return secret;
 }
 
 function sign(payload: string): string {

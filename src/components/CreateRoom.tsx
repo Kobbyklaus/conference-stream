@@ -77,7 +77,10 @@ export default function CreateRoom() {
 
       const res = await fetch("/api/rooms", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": typeof window !== "undefined" ? localStorage.getItem("admin_token") || "" : "",
+        },
         body: JSON.stringify({
           name,
           videoUrl,
